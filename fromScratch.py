@@ -82,4 +82,9 @@ class Organism:
                     novelSynapsesGlobal[synapseNew2] = len(novelSynapsesGlobal)
                 self.synapses[novelSynapsesGlobal[synapseNew2]] = Synapse(newNeuron, synapse.destinationNeuron, synapse.weight, True)
 
-        
+    def distance(self, other):
+        synapseIDsSelf, synapseIDsOther = set(self.synapses.keys()), set(other.synapses.keys())
+        disjointNumber = len(synapseIDsSelf ^ synapseIDsOther)
+        matching = synapseIDsSelf & synapseIDsOther
+        weightsDifference = sum(abs(self.synapses[synapseID].weight - other.synapses[synapseID].weight) for synapseID in matching)/len(matching) if matching else 0
+        return 1*disjointNumber + 0.4*weightsDifference
