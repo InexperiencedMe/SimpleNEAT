@@ -107,7 +107,6 @@ class Organism:
                 child.synapses[synapseID] = copy.deepcopy(chosen)
             else:
                 child.synapses[synapseID] = copy.deepcopy(synapse) # Assume self is fitter, so we take their disjoint genes
-
         return child
 
 class NEAT:
@@ -117,7 +116,17 @@ class NEAT:
         self.outputSize     = outputSize
 
     def getInitialPopulation(self):
-        pass
+        population = []
+        for _ in range(self.populationSize):
+            organism = Organism(self.inputSize, self.outputSize)
+            for input in range(self.inputSize):
+                for output in range(self.outputSize):
+                    connection = (input, self.inputSize + output)
+                    if connection not in novelSynapsesGlobal:
+                        novelSynapsesGlobal[connection] = len(novelSynapsesGlobal)
+                    organism.synapses[novelSynapsesGlobal[connection]] = Synapse(input, output, rng.normal(0, 1.0), True)
+            population.append(organism)
+        return population                
 
     def getNewPopulation(self, population, fitnessScores):
         pass
