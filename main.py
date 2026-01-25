@@ -24,6 +24,8 @@ class Organism:
         self.neurons    = set(range(inputSize + outputSize))
         self.synapses   = {} # {synapseID: Synapse}
         self.memory     = self.memory = defaultdict(float)
+        self.fitness            = 0.0
+        self.adjustedFitness    = 0.0
 
         self.mutationChance_modifyWeight    = 0.8
         self.mutationChance_newSynapse      = 0.1
@@ -109,11 +111,20 @@ class Organism:
                 child.synapses[synapseID] = copy.deepcopy(synapse) # Assume self is fitter, so we take their disjoint genes
         return child
 
+class Species:
+    def __init__(self, representative):
+        self.representative = representative
+        self.members = []
+        self.averageFitness = 0.0
+        # TODO: Add age plus best member?
+
 class NEAT:
     def __init__(self, populationSize, inputSize, outputSize):
         self.populationSize = populationSize
         self.inputSize      = inputSize
         self.outputSize     = outputSize
+        self.species        = []
+        self.compatibilityThreshold = 3.0 # TODO: Rethink positioning, should it be dynamically adjusted?
 
     def getInitialPopulation(self):
         population = []
@@ -129,10 +140,33 @@ class NEAT:
         return population                
 
     def getNewPopulation(self, population, fitnessScores):
-        pass
+        self.species = self.speciate(population)
+        # TODO: Finish this
+
+    def speciate(self, population): # TODO: I'd prefer if species remained, not got erased every generation
+        species = []
+        for organism in population:
+            placed = False
+            for specimen in species:
+                if self.calculateGeneticDistance(organism, specimen.representative) < self.compatibilityThreshold:
+                    specimen.members.append(organism)
+                    placed = True; break
+            if not placed:
+                species.append(Species(organism))
+        return species
 
     def calculateGeneticDistance(self, firstOrganism, secondOrganism):
-        pass
+        keys1, keys2 = set(firstOrganism.synapses.keys()), set(secondOrganism.synapses.keys())
+
+        disjointCount = len(keys1 ^ keys2)
+        matchingNeurons = keys1 & keys2
+
+        if matchingNeurons:
+            weightsDifference = sum(abs(firstOrganism.synapses[key].weight - secondOrganism.synapses[key].weight) for key in matchingNeurons)
+        else:
+            weightsDifference = 0.0
+        return 1.0 * disjointCount + 0.4 * weightsDifference # FIXME: No hardcoding
+        
 
 def main(args):
     env = CleanLunarLander(gym.make("LunarLanderContinuous-v3", render_mode=None))
