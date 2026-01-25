@@ -19,7 +19,7 @@ class Synapse:
 
 class Organism:
     def __init__(self, inputSize, outputSize):
-        self.inputSize  = inputSize
+        self.inputSize  = inputSize # TODO: Implement one bias input that is always one, so inputSize + 1 here
         self.outputSize = outputSize
         self.neurons    = set(range(inputSize + outputSize))
         self.synapses   = {} # {synapseID: Synapse}
@@ -207,7 +207,7 @@ class NEAT:
             weightsDifference = sum(abs(firstOrganism.synapses[key].weight - secondOrganism.synapses[key].weight) for key in matchingNeurons) / len(matchingNeurons)
         else:
             weightsDifference = 0.0
-        return 1.0 * disjointCount + 0.4 * weightsDifference # FIXME: No hardcoding
+        return 1.0 * disjointCount + 0.4 * weightsDifference # FIXME: No hardcoding, also check formula, should normalize disjoint
         
 
 def main(args):
