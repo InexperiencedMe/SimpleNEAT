@@ -6,7 +6,7 @@ import gymnasium as gym
 from environmentUtils import CleanLunarLander
 import copy
 rng = np.random.default_rng(123)
-novelSynapsesGlobal = {}  # {(source, destination): synapseID}
+novelSynapsesGlobal = {}  # {(source, destination): synapseID} # TODO: Should be within NEAT class
 novelNeuronsGlobal  = {}  # {(source, destination): neuronID}
 novelNeuronsCountGlobal = 10 # FIXME: Obviously it cannot stay like this, hardcoded LunarLander now
 
@@ -24,7 +24,7 @@ class Organism:
         self.neurons    = set(range(inputSize + outputSize))
         self.synapses   = {} # {synapseID: Synapse}
         self.memory     = self.memory = defaultdict(float)
-        self.fitness            = 0.0
+        self.fitness            = 0.0 # NOTE: Aaaaaghhhhhhh nooooooooo, separation of conceeeeeernsss
         self.adjustedFitness    = 0.0
 
         self.mutationChance_modifyWeight    = 0.8
@@ -51,10 +51,11 @@ class Organism:
         return np.array([self.memory[self.inputSize + i] for i in range(self.outputSize)])
 
     def mutate(self):
+        global novelNeuronsCountGlobal
         if rng.random() < self.mutationChance_modifyWeight:
             for synapse in self.synapses.values():
                 if rng.random() < 0.9:
-                    synapse.weight += rng.normal(0, 0.2)
+                    synapse.weight += rng.normal(0, 0.1)
                 else:
                     synapse.weight = rng.normal(0, 1.0)
 
@@ -114,7 +115,7 @@ class Organism:
 class Species:
     def __init__(self, representative):
         self.representative = representative
-        self.members = []
+        self.members = [representative]
         self.averageFitness = 0.0
         # TODO: Add age plus best member?
 
@@ -123,25 +124,66 @@ class NEAT:
         self.populationSize = populationSize
         self.inputSize      = inputSize
         self.outputSize     = outputSize
-        self.species        = []
-        self.compatibilityThreshold = 3.0 # TODO: Rethink positioning, should it be dynamically adjusted?
+        self.compatibilityThreshold = 3.0 # TODO: Rethink positioning
+        self.speciesTargetCount     = 10
 
     def getInitialPopulation(self):
         population = []
         for _ in range(self.populationSize):
             organism = Organism(self.inputSize, self.outputSize)
             for input in range(self.inputSize):
-                for output in range(self.outputSize):
-                    connection = (input, self.inputSize + output)
+                for output in range(self.inputSize, self.inputSize + self.outputSize):
+                    connection = (input, output)
                     if connection not in novelSynapsesGlobal:
                         novelSynapsesGlobal[connection] = len(novelSynapsesGlobal)
                     organism.synapses[novelSynapsesGlobal[connection]] = Synapse(input, output, rng.normal(0, 1.0), True)
             population.append(organism)
         return population                
 
-    def getNewPopulation(self, population, fitnessScores):
-        self.species = self.speciate(population)
-        # TODO: Finish this
+    def getNewPopulation(self, population):
+        species = self.speciate(population) # TODO: We will want to preserve species across generations
+
+        if len(species) < self.speciesTargetCount: self.compatibilityThreshold -= 0.1
+        elif len(species) > self.speciesTargetCount: self.compatibilityThreshold += 0.1
+        self.compatibilityThreshold = max(0.3, self.compatibilityThreshold)
+
+        newPopulation = []
+        totalAdjustedFitness = 0
+        validSpecies = [s for s in species if len(s.members) > 0] # Useless for now, but maybe later when we preserve across gen?
+
+        for species in validSpecies:
+            species.members.sort(key=lambda organism: organism.fitness, reverse=True)
+            minimumFitness = min(organism.fitness for organism in species.members)
+            shift = 0 if minimumFitness > 0 else abs(minimumFitness)
+
+            averageSpeciesFitness = 0
+            for organism in species.members:
+                organism.adjustedFitness = (organism.fitness + shift) / len(species.members)
+                averageSpeciesFitness += organism.adjustedFitness
+            species.averageFitness = averageSpeciesFitness
+            totalAdjustedFitness += species.averageFitness
+
+            newPopulation.append(copy.deepcopy(species.members[0])) # Elitism
+
+        while len(newPopulation) < self.populationSize:
+            draw = rng.uniform(0, totalAdjustedFitness)
+            currentThreshold = 0
+            selectedSpecies = validSpecies[0]
+            for species in validSpecies:
+                currentThreshold += species.averageFitness
+                if currentThreshold > draw:
+                    selectedSpecies = species
+                    break
+            
+            pool = selectedSpecies.members[:max(1, len(selectedSpecies.members) // 2)] # Top 50%
+            parent1 = rng.choice(pool)
+            parent2 = rng.choice(pool)
+
+            child = parent1.reproduce(parent2) if parent1.fitness > parent2.fitness else parent2.reproduce(parent1)
+            child.mutate()
+            newPopulation.append(child)
+        return newPopulation
+
 
     def speciate(self, population): # TODO: I'd prefer if species remained, not got erased every generation
         species = []
@@ -162,7 +204,7 @@ class NEAT:
         matchingNeurons = keys1 & keys2
 
         if matchingNeurons:
-            weightsDifference = sum(abs(firstOrganism.synapses[key].weight - secondOrganism.synapses[key].weight) for key in matchingNeurons)
+            weightsDifference = sum(abs(firstOrganism.synapses[key].weight - secondOrganism.synapses[key].weight) for key in matchingNeurons) / len(matchingNeurons)
         else:
             weightsDifference = 0.0
         return 1.0 * disjointCount + 0.4 * weightsDifference # FIXME: No hardcoding
@@ -173,9 +215,11 @@ def main(args):
     solver = NEAT(args.populationSize, inputSize=env.observationSize, outputSize=env.actionSize)
     population = solver.getInitialPopulation()
 
-    fitnessScores = np.zeros(args.populationSize, dtype=np.float32)
+    generation = 0
+    maxFitnessEver = -np.inf
     while True:
-        for i, organism in enumerate(population):
+        maxFitnessThisGeneration = -np.inf
+        for organism in population:
             fitnessScore = 0
             for _ in range(args.evaluationEpisodes):
                 state = env.reset()
@@ -185,13 +229,30 @@ def main(args):
                     state, reward, done = env.step(action)
                     fitnessScore += reward
                     if done: break
-            fitnessScores[i] = fitnessScore / args.evaluationEpisodes
+            organism.fitness = fitnessScore / args.evaluationEpisodes
+            if organism.fitness > maxFitnessEver: maxFitnessEver = organism.fitness; bestOrganism = organism
+            if organism.fitness > maxFitnessThisGeneration: maxFitnessThisGeneration = organism.fitness
+        print(f"Generation {generation}: Best fitness: {maxFitnessThisGeneration:6.2f} | Best of all time {maxFitnessEver:6.2f}")
         
-        endConditionMet = np.max(fitnessScores) >= args.targetFitness
+        endConditionMet = np.max(maxFitnessEver) >= args.targetFitness
         if endConditionMet:
             break
         else:
-            population = solver.getNewPopulation(population, fitnessScores)
+            population = solver.getNewPopulation(population)
+            generation += 1
+
+    # Visualize the winner
+    env = CleanLunarLander(gym.make("LunarLanderContinuous-v3", render_mode="human"))
+    for i in range(20):
+        state = env.reset()
+        bestOrganism.clearMemory()
+        fitnessScore = 0
+        while True:
+            action = bestOrganism(state)
+            state, reward, done = env.step(action)
+            fitnessScore += reward
+            if done: break
+        print(f"Episode {i+1} Reward: {fitnessScore:.2f}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
