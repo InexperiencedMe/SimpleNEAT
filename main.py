@@ -70,8 +70,8 @@ class Organism:
                     synapse.weight = rng.normal(0, 1.0)
 
         if rng.random() < self.mutationChance_newSynapse:
-            source        = rng.choice(list(self.neurons)) # TODO: We shouldnt include input to not skip this mutation
-            destination   = rng.choice(list(self.neurons))
+            source        = int(rng.choice(list(self.neurons))) # TODO: We shouldnt include input to not skip this mutation
+            destination   = int(rng.choice(list(self.neurons)))
 
             if destination >= self.inputSize:
                 key = (source, destination)
@@ -238,7 +238,7 @@ def main(args):
             if organism.fitness > maxFitnessEver: maxFitnessEver = organism.fitness; bestOrganism = organism
             if organism.fitness > maxFitnessThisGeneration: maxFitnessThisGeneration = organism.fitness
         print(f"Generation {generation}: Best fitness: {maxFitnessThisGeneration:6.2f} | Best of all time {maxFitnessEver:6.2f}")
-        
+
         endConditionMet = np.max(maxFitnessEver) >= args.targetFitness
         if endConditionMet:
             break
