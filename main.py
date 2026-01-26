@@ -8,7 +8,7 @@ import copy
 rng = np.random.default_rng(123)
 novelSynapsesGlobal = {}  # {(source, destination): synapseID} # TODO: Should be within NEAT class
 novelNeuronsGlobal  = {}  # {(source, destination): neuronID}
-novelNeuronsCountGlobal = 10 # FIXME: Obviously it cannot stay like this, hardcoded LunarLander now
+novelNeuronsCountGlobal = 11 # FIXME: Obviously it cannot stay like this, hardcoded LunarLander now: 8 + 1 input, 2 output
 
 @dataclass(slots=True)
 class Synapse:
@@ -19,9 +19,9 @@ class Synapse:
 
 class Organism:
     def __init__(self, inputSize, outputSize):
-        self.inputSize  = inputSize # TODO: Implement one bias input that is always one, so inputSize + 1 here
+        self.inputSize  = inputSize + 1 # Accounting for bias node. I want it to be internal only
         self.outputSize = outputSize
-        self.neurons    = set(range(inputSize + outputSize))
+        self.neurons    = set(range(self.inputSize + self.outputSize))
         self.synapses   = {} # {synapseID: Synapse}
         self.memory     = self.memory = defaultdict(float)
         self.fitness            = 0.0 # NOTE: Aaaaaghhhhhhh nooooooooo, separation of conceeeeeernsss
@@ -35,6 +35,8 @@ class Organism:
         self.memory.clear()
 
     def __call__(self, inputs): # NOTE: Mimic reference for now, then experiment with own ideas
+        inputs = np.append(inputs, 1.0)
+
         currentState = self.memory.copy() # TODO: Do I reeeaaallly need to copy?
         for i, input in enumerate(inputs):
             currentState[i] = input
@@ -49,6 +51,14 @@ class Organism:
                 self.memory[neuron] = np.tanh(nextState[neuron])
         
         return np.array([self.memory[self.inputSize + i] for i in range(self.outputSize)])
+    
+    def initializeSynapses(self):
+        for input in range(self.inputSize):
+            for output in range(self.inputSize, self.inputSize + self.outputSize):
+                connection = (input, output)
+                if connection not in novelSynapsesGlobal:
+                    novelSynapsesGlobal[connection] = len(novelSynapsesGlobal)
+                self.synapses[novelSynapsesGlobal[connection]] = Synapse(input, output, rng.normal(0, 1.0), True)
 
     def mutate(self):
         global novelNeuronsCountGlobal
@@ -101,7 +111,7 @@ class Organism:
                 self.synapses[novelSynapsesGlobal[synapseNew2]] = Synapse(newNeuron, synapse.destination, synapse.weight, True)
 
     def reproduce(self, otherParent):
-        child = Organism(self.inputSize, self.outputSize)
+        child = Organism(self.inputSize - 1, self.outputSize)
         child.neurons = set(self.neurons)
 
         for synapseID, synapse in self.synapses.items():
@@ -131,12 +141,7 @@ class NEAT:
         population = []
         for _ in range(self.populationSize):
             organism = Organism(self.inputSize, self.outputSize)
-            for input in range(self.inputSize):
-                for output in range(self.inputSize, self.inputSize + self.outputSize):
-                    connection = (input, output)
-                    if connection not in novelSynapsesGlobal:
-                        novelSynapsesGlobal[connection] = len(novelSynapsesGlobal)
-                    organism.synapses[novelSynapsesGlobal[connection]] = Synapse(input, output, rng.normal(0, 1.0), True)
+            organism.initializeSynapses()
             population.append(organism)
         return population                
 
