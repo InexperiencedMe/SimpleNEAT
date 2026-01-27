@@ -23,7 +23,7 @@ class Organism:
         self.outputSize = outputSize
         self.neurons    = set(range(self.inputSize + self.outputSize))
         self.synapses   = {} # {synapseID: Synapse}
-        self.memory     = self.memory = defaultdict(float)
+        self.memory     = defaultdict(float)
         self.fitness            = 0.0 # NOTE: Aaaaaghhhhhhh nooooooooo, separation of conceeeeeernsss
         self.adjustedFitness    = 0.0
 
@@ -34,21 +34,19 @@ class Organism:
     def clearMemory(self):
         self.memory.clear()
 
-    def __call__(self, inputs): # NOTE: Mimic reference for now, then experiment with own ideas
-        inputs = np.append(inputs, 1.0)
-
-        currentState = self.memory.copy() # TODO: Do I reeeaaallly need to copy?
+    def __call__(self, inputs):
+        inputs = np.append(inputs, 1.0) # Adding bias node
         for i, input in enumerate(inputs):
-            currentState[i] = input
+            self.memory[i] = input
         
-        nextState = defaultdict(float)
+        newState = defaultdict(float)
         for synapse in self.synapses.values():
             if synapse.enabled:
-                nextState[synapse.destination] += currentState[synapse.source] * synapse.weight
+                newState[synapse.destination] += self.memory[synapse.source] * synapse.weight
 
         for neuron in self.neurons:
             if neuron >= self.inputSize:
-                self.memory[neuron] = np.tanh(nextState[neuron])
+                self.memory[neuron] = np.tanh(newState[neuron])
         
         return np.array([self.memory[self.inputSize + i] for i in range(self.outputSize)])
     
@@ -224,6 +222,7 @@ def main(args):
     maxFitnessEver = -np.inf
     while True:
         maxFitnessThisGeneration = -np.inf
+        fitnessScoresThisGeneration = 0
         for organism in population:
             fitnessScore = 0
             for _ in range(args.evaluationEpisodes):
@@ -237,7 +236,9 @@ def main(args):
             organism.fitness = fitnessScore / args.evaluationEpisodes
             if organism.fitness > maxFitnessEver: maxFitnessEver = organism.fitness; bestOrganism = organism
             if organism.fitness > maxFitnessThisGeneration: maxFitnessThisGeneration = organism.fitness
-        print(f"Generation {generation}: Best fitness: {maxFitnessThisGeneration:6.2f} | Best of all time {maxFitnessEver:6.2f}")
+            fitnessScoresThisGeneration += organism.fitness
+        fitnessScoresThisGeneration /= args.populationSize
+        print(f"Generation {generation:4}: Best This Generation: {maxFitnessThisGeneration:>8.2f} | Average This Generation: {fitnessScoresThisGeneration:>8.2f} | Best Overall: {maxFitnessEver:>8.2f}")
 
         endConditionMet = np.max(maxFitnessEver) >= args.targetFitness
         if endConditionMet:
