@@ -6,9 +6,9 @@ import gymnasium as gym
 from environmentUtils import CleanLunarLander
 import copy
 rng = np.random.default_rng(123)
-novelSynapsesGlobal = {}  # {(source, destination): synapseID} # TODO: Should be within NEAT class
-novelNeuronsGlobal  = {}  # {(source, destination): neuronID}
-novelNeuronsCountGlobal = 11 # FIXME: Obviously it cannot stay like this, hardcoded LunarLander now: 8 + 1 input, 2 output
+novelSynapsesGlobal = {}  # {(source, destination): novelSynapseID} # TODO: Should be within NEAT class
+novelNeuronsGlobal  = {}  # {(source, destination): novelNeuronID}
+neuronsCountGlobal = 11 # FIXME: Obviously it cannot stay like this, hardcoded LunarLander now: 8 + 1 input, 2 output
 
 @dataclass(slots=True)
 class Synapse:
@@ -55,13 +55,13 @@ class Organism:
     def initializeSynapses(self):
         for input in range(self.inputSize):
             for output in range(self.inputSize, self.inputSize + self.outputSize):
-                connection = (input, output)
-                if connection not in novelSynapsesGlobal:
-                    novelSynapsesGlobal[connection] = len(novelSynapsesGlobal)
-                self.synapses[novelSynapsesGlobal[connection]] = Synapse(input, output, rng.normal(0, 1.0), True)
+                link = (input, output)
+                if link not in novelSynapsesGlobal:
+                    novelSynapsesGlobal[link] = len(novelSynapsesGlobal)
+                self.synapses[novelSynapsesGlobal[link]] = Synapse(input, output, rng.normal(0, 1.0), True)
 
     def mutate(self):
-        global novelNeuronsCountGlobal
+        global neuronsCountGlobal
         if rng.random() < self.mutationChance_modifyWeight:
             for synapse in self.synapses.values():
                 if rng.random() < 0.9:
@@ -74,15 +74,15 @@ class Organism:
             destination   = int(rng.choice(list(self.neurons)))
 
             if destination >= self.inputSize:
-                key = (source, destination)
-                existingConnections = set((synapse.source, synapse.destination) for synapse in self.synapses.values())
+                link = (source, destination)
+                existingLinks = set((synapse.source, synapse.destination) for synapse in self.synapses.values())
 
-                if key not in existingConnections: # FIXME: Retry is better than this
-                    if key not in novelSynapsesGlobal:
-                        novelSynapsesGlobal[key] = len(novelSynapsesGlobal)
+                if link not in existingLinks: # FIXME: Retry is better than this. TODO: Make separate mutation functions and retry
+                    if link not in novelSynapsesGlobal:
+                        novelSynapsesGlobal[link] = len(novelSynapsesGlobal)
 
-                    innovationID = novelSynapsesGlobal[key]
-                    self.synapses[innovationID] = Synapse(source, destination, rng.normal(0, 1.0), True)
+                    novelSynapseID = novelSynapsesGlobal[link]
+                    self.synapses[novelSynapseID] = Synapse(source, destination, rng.normal(0, 1.0), True)
         
         if rng.random() < self.mutationChance_newNeuron and self.synapses:
             synapse = self.synapses[rng.choice(list(self.synapses.keys()))]
@@ -94,21 +94,21 @@ class Organism:
                 if splitKey in novelNeuronsGlobal:
                     newNeuron = novelNeuronsGlobal[splitKey]
                 else:
-                    newNeuron = novelNeuronsCountGlobal
-                    novelNeuronsCountGlobal += 1
+                    newNeuron = neuronsCountGlobal
+                    neuronsCountGlobal += 1
                     novelNeuronsGlobal[splitKey] = newNeuron
 
                 self.neurons.add(newNeuron)
 
-                synapseNew1 = (synapse.source, newNeuron)
-                if synapseNew1 not in novelSynapsesGlobal:
-                    novelSynapsesGlobal[synapseNew1] = len(novelSynapsesGlobal)
-                self.synapses[novelSynapsesGlobal[synapseNew1]] = Synapse(synapse.source, newNeuron, 1.0, True)
+                linkNew1 = (synapse.source, newNeuron)
+                if linkNew1 not in novelSynapsesGlobal:
+                    novelSynapsesGlobal[linkNew1] = len(novelSynapsesGlobal)
+                self.synapses[novelSynapsesGlobal[linkNew1]] = Synapse(synapse.source, newNeuron, 1.0, True)
 
-                synapseNew2 = (newNeuron, synapse.destination)
-                if synapseNew2 not in novelSynapsesGlobal:
-                    novelSynapsesGlobal[synapseNew2] = len(novelSynapsesGlobal)
-                self.synapses[novelSynapsesGlobal[synapseNew2]] = Synapse(newNeuron, synapse.destination, synapse.weight, True)
+                linkNew2 = (newNeuron, synapse.destination)
+                if linkNew2 not in novelSynapsesGlobal:
+                    novelSynapsesGlobal[linkNew2] = len(novelSynapsesGlobal)
+                self.synapses[novelSynapsesGlobal[linkNew2]] = Synapse(newNeuron, synapse.destination, synapse.weight, True)
 
     def reproduce(self, otherParent):
         child = Organism(self.inputSize - 1, self.outputSize)
@@ -135,7 +135,7 @@ class NEAT:
         self.inputSize      = inputSize
         self.outputSize     = outputSize
         self.compatibilityThreshold = 3.0 # TODO: Rethink positioning
-        self.speciesTargetCount     = 10
+        self.targetSpeciesCount     = 10
 
     def getInitialPopulation(self):
         population = []
@@ -148,8 +148,8 @@ class NEAT:
     def getNewPopulation(self, population):
         species = self.speciate(population) # TODO: We will want to preserve species across generations
 
-        if len(species) < self.speciesTargetCount: self.compatibilityThreshold -= 0.1
-        elif len(species) > self.speciesTargetCount: self.compatibilityThreshold += 0.1
+        if len(species) < self.targetSpeciesCount: self.compatibilityThreshold -= 0.1
+        elif len(species) > self.targetSpeciesCount: self.compatibilityThreshold += 0.1
         self.compatibilityThreshold = max(0.3, self.compatibilityThreshold)
 
         newPopulation = []
