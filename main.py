@@ -6,9 +6,27 @@ import gymnasium as gym
 from environmentUtils import CleanLunarLander
 import copy
 rng = np.random.default_rng(123)
-novelSynapsesGlobal = {}  # {(source, destination): novelSynapseID} # TODO: Should be within NEAT class
-novelNeuronsGlobal  = {}  # {(source, destination): novelNeuronID}
-neuronsCountGlobal = 11 # FIXME: Obviously it cannot stay like this, hardcoded LunarLander now: 8 + 1 input, 2 output
+
+class InnovationTracker:
+    def __init__(self, inputSize, outputSize):
+        self.novelSynapses  = {}  # {(source, destination): novelSynapseID}
+        self.novelNeurons   = {}  # {(source, destination): novelNeuronID}
+        self.neuronCount    = (inputSize + 1) + outputSize # inputs + bias node + outputs
+        self.synapseCount   = 0
+
+    def getSynapseID(self, source, destination):
+        link = (source, destination)
+        if link not in self.novelSynapses:
+            self.novelSynapses[link] = self.synapseCount
+            self.synapseCount += 1
+        return self.novelSynapses[link]
+    
+    def getNeuronID(self, source, destination):
+        splitKey = (source, destination)
+        if splitKey not in self.novelNeurons:
+            self.novelNeurons[splitKey] = self.neuronCount
+            self.neuronCount += 1
+        return self.novelNeurons[splitKey]
 
 @dataclass(slots=True)
 class Synapse:
@@ -24,12 +42,12 @@ class Organism:
         self.neurons    = set(range(self.inputSize + self.outputSize))
         self.synapses   = {} # {synapseID: Synapse}
         self.memory     = defaultdict(float)
-        self.fitness            = 0.0 # NOTE: Aaaaaghhhhhhh nooooooooo, separation of conceeeeeernsss
-        self.adjustedFitness    = 0.0
+        self.fitness         = 0.0 # NOTE: Aaaaaghhhhhhh nooooooooo, separation of conceeeeeernsss
+        self.adjustedFitness = 0.0
 
-        self.mutationChance_modifyWeight    = 0.8
-        self.mutationChance_newSynapse      = 0.1
-        self.mutationChance_newNeuron       = 0.03
+        self.mutationChance_modifyWeight = 0.8
+        self.mutationChance_newSynapse   = 0.1
+        self.mutationChance_newNeuron    = 0.03
 
     def clearMemory(self):
         self.memory.clear()
@@ -50,16 +68,12 @@ class Organism:
         
         return np.array([self.memory[self.inputSize + i] for i in range(self.outputSize)])
     
-    def initializeSynapses(self):
+    def initializeSynapses(self, tracker):
         for input in range(self.inputSize):
             for output in range(self.inputSize, self.inputSize + self.outputSize):
-                link = (input, output)
-                if link not in novelSynapsesGlobal:
-                    novelSynapsesGlobal[link] = len(novelSynapsesGlobal)
-                self.synapses[novelSynapsesGlobal[link]] = Synapse(input, output, rng.normal(0, 1.0), True)
+                self.synapses[tracker.getSynapseID(input, output)] = Synapse(input, output, rng.normal(0, 1.0), True)
 
-    def mutate(self):
-        global neuronsCountGlobal
+    def mutate(self, tracker):
         if rng.random() < self.mutationChance_modifyWeight:
             for synapse in self.synapses.values():
                 if rng.random() < 0.9:
@@ -76,37 +90,22 @@ class Organism:
                 existingLinks = set((synapse.source, synapse.destination) for synapse in self.synapses.values())
 
                 if link not in existingLinks: # FIXME: Retry is better than this. TODO: Make separate mutation functions and retry
-                    if link not in novelSynapsesGlobal:
-                        novelSynapsesGlobal[link] = len(novelSynapsesGlobal)
-
-                    novelSynapseID = novelSynapsesGlobal[link]
-                    self.synapses[novelSynapseID] = Synapse(source, destination, rng.normal(0, 1.0), True)
+                    self.synapses[tracker.getSynapseID(source, destination)] = Synapse(source, destination, rng.normal(0, 1.0), True)
         
         if rng.random() < self.mutationChance_newNeuron and self.synapses:
             synapse = self.synapses[rng.choice(list(self.synapses.keys()))]
 
             if synapse.enabled: # FIXME: Retry if invalid synapse, otherwise skipped mutation
                 synapse.enabled = False
-                splitKey = (synapse.source, synapse.destination)
 
-                if splitKey in novelNeuronsGlobal:
-                    newNeuron = novelNeuronsGlobal[splitKey]
-                else:
-                    newNeuron = neuronsCountGlobal
-                    neuronsCountGlobal += 1
-                    novelNeuronsGlobal[splitKey] = newNeuron
-
+                newNeuron = tracker.getNeuronID(synapse.source, synapse.destination)
                 self.neurons.add(newNeuron)
 
-                linkNew1 = (synapse.source, newNeuron)
-                if linkNew1 not in novelSynapsesGlobal:
-                    novelSynapsesGlobal[linkNew1] = len(novelSynapsesGlobal)
-                self.synapses[novelSynapsesGlobal[linkNew1]] = Synapse(synapse.source, newNeuron, 1.0, True)
+                newLinkID1 = tracker.getSynapseID(synapse.source, newNeuron)
+                self.synapses[newLinkID1] = Synapse(synapse.source, newNeuron, 1.0, True)
 
-                linkNew2 = (newNeuron, synapse.destination)
-                if linkNew2 not in novelSynapsesGlobal:
-                    novelSynapsesGlobal[linkNew2] = len(novelSynapsesGlobal)
-                self.synapses[novelSynapsesGlobal[linkNew2]] = Synapse(newNeuron, synapse.destination, synapse.weight, True)
+                newLinkID2 = tracker.getSynapseID(newNeuron, synapse.destination)
+                self.synapses[newLinkID2] = Synapse(newNeuron, synapse.destination, synapse.weight, True)
 
     def reproduce(self, otherParent):
         child = Organism(self.inputSize - 1, self.outputSize)
@@ -135,11 +134,13 @@ class NEAT:
         self.compatibilityThreshold = 3.0 # TODO: Rethink positioning
         self.targetSpeciesCount     = 10
 
+        self.tracker        = InnovationTracker(inputSize, outputSize)
+
     def getInitialPopulation(self):
         population = []
         for _ in range(self.populationSize):
             organism = Organism(self.inputSize, self.outputSize)
-            organism.initializeSynapses()
+            organism.initializeSynapses(self.tracker)
             population.append(organism)
         return population                
 
@@ -183,7 +184,7 @@ class NEAT:
             parent2 = rng.choice(pool)
 
             child = parent1.reproduce(parent2) if parent1.fitness > parent2.fitness else parent2.reproduce(parent1)
-            child.mutate()
+            child.mutate(self.tracker)
             newPopulation.append(child)
         return newPopulation
 
