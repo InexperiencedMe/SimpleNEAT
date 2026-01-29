@@ -81,31 +81,34 @@ class Organism:
                 else:
                     synapse.weight = rng.normal(0, 1.0)
 
-        if rng.random() < self.mutationChance_newSynapse:
-            source        = int(rng.choice(list(self.neurons))) # TODO: We shouldnt include input to not skip this mutation
-            destination   = int(rng.choice(list(self.neurons)))
-
-            if destination >= self.inputSize:
+        if rng.random() < self.mutationChance_newSynapse:   
+            validSources        = list(self.neurons)
+            validDestinations   = [n for n in self.neurons if n >= self.inputSize]
+            existingLinks       = set((synapse.source, synapse.destination) for synapse in self.synapses.values())
+            for _ in range(10): # Retrying is faster than listing new possible links
+                source        = int(rng.choice(validSources))
+                destination   = int(rng.choice(validDestinations))
                 link = (source, destination)
-                existingLinks = set((synapse.source, synapse.destination) for synapse in self.synapses.values())
-
-                if link not in existingLinks: # FIXME: Retry is better than this. TODO: Make separate mutation functions and retry
+                if link not in existingLinks:
                     self.synapses[tracker.getSynapseID(source, destination)] = Synapse(source, destination, rng.normal(0, 1.0), True)
+                    break
         
         if rng.random() < self.mutationChance_newNeuron and self.synapses:
-            synapse = self.synapses[rng.choice(list(self.synapses.keys()))]
+            synapseKeys = list(self.synapses.keys())
+            for _ in range(10):
+                synapseToSplit = self.synapses[rng.choice(synapseKeys)]
+                if synapseToSplit.enabled:
+                    synapseToSplit.enabled = False
 
-            if synapse.enabled: # FIXME: Retry if invalid synapse, otherwise skipped mutation
-                synapse.enabled = False
+                    newNeuron = tracker.getNeuronID(synapseToSplit.source, synapseToSplit.destination)
+                    self.neurons.add(newNeuron)
 
-                newNeuron = tracker.getNeuronID(synapse.source, synapse.destination)
-                self.neurons.add(newNeuron)
+                    newLinkID1 = tracker.getSynapseID(synapseToSplit.source, newNeuron)
+                    self.synapses[newLinkID1] = Synapse(synapseToSplit.source, newNeuron, 1.0, True)
 
-                newLinkID1 = tracker.getSynapseID(synapse.source, newNeuron)
-                self.synapses[newLinkID1] = Synapse(synapse.source, newNeuron, 1.0, True)
-
-                newLinkID2 = tracker.getSynapseID(newNeuron, synapse.destination)
-                self.synapses[newLinkID2] = Synapse(newNeuron, synapse.destination, synapse.weight, True)
+                    newLinkID2 = tracker.getSynapseID(newNeuron, synapseToSplit.destination)
+                    self.synapses[newLinkID2] = Synapse(newNeuron, synapseToSplit.destination, synapseToSplit.weight, True)
+                    break
 
     def reproduce(self, otherParent):
         child = Organism(self.inputSize - 1, self.outputSize)
