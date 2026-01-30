@@ -85,7 +85,7 @@ class Organism:
             validSources        = list(self.neurons)
             validDestinations   = [n for n in self.neurons if n >= self.inputSize]
             existingLinks       = set((synapse.source, synapse.destination) for synapse in self.synapses.values())
-            for _ in range(10): # Retrying is faster than listing new possible links
+            for _ in range(10): # Retrying is faster than listing possible new links
                 source        = int(rng.choice(validSources))
                 destination   = int(rng.choice(validDestinations))
                 link = (source, destination)
@@ -134,10 +134,10 @@ class NEAT:
         self.populationSize = populationSize
         self.inputSize      = inputSize
         self.outputSize     = outputSize
+        self.tracker        = InnovationTracker(inputSize, outputSize)
         self.compatibilityThreshold = 3.0 # TODO: Rethink positioning
         self.targetSpeciesCount     = 10
 
-        self.tracker        = InnovationTracker(inputSize, outputSize)
 
     def getInitialPopulation(self):
         population = []
@@ -205,16 +205,29 @@ class NEAT:
         return species
 
     def calculateGeneticDistance(self, firstOrganism, secondOrganism):
-        keys1, keys2 = set(firstOrganism.synapses.keys()), set(secondOrganism.synapses.keys())
+        synapseIDs1, synapseIDs2 = set(firstOrganism.synapses.keys()), set(secondOrganism.synapses.keys())
 
-        disjointCount = len(keys1 ^ keys2)
-        matchingNeurons = keys1 & keys2
-
-        if matchingNeurons:
-            weightsDifference = sum(abs(firstOrganism.synapses[key].weight - secondOrganism.synapses[key].weight) for key in matchingNeurons) / len(matchingNeurons)
+        matchingSynapses = synapseIDs1 & synapseIDs2
+        if matchingSynapses:
+            weightsDifference = sum(abs(firstOrganism.synapses[key].weight - secondOrganism.synapses[key].weight) for key in matchingSynapses) / len(matchingSynapses)
         else:
             weightsDifference = 0.0
-        return 1.0 * disjointCount + 0.4 * weightsDifference # FIXME: No hardcoding, also check formula, should normalize disjoint
+
+        disjointSynapseIDs = synapseIDs1 ^ synapseIDs2
+        lowerMaxSynapseID = min(max(synapseIDs1) if synapseIDs1 else 0, max(synapseIDs2) if synapseIDs2 else 0)
+
+        disjointCount, excessCount = 0, 0
+        for synapseID in disjointSynapseIDs:
+            if synapseID <= lowerMaxSynapseID:
+                disjointCount += 1
+            else:
+                excessCount += 1
+
+        maxSynapses = max(len(synapseIDs1), len(synapseIDs2))
+        c1 = 1 # FIXME not harcoding
+        c2 = 1
+        c3 = 0.4
+        return (c1*excessCount + c2*disjointCount)/maxSynapses + c3*weightsDifference
         
 
 def main(args):
