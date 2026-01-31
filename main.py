@@ -1,10 +1,10 @@
-import argparse
 import numpy as np
+import gymnasium as gym
+import argparse
+import copy
 from dataclasses import dataclass
 from collections import defaultdict
-import gymnasium as gym
 from environmentUtils import CleanLunarLander
-import copy
 rng = np.random.default_rng(123)
 
 class InnovationTracker:
