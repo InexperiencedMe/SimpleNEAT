@@ -30,13 +30,14 @@ class InnovationTracker:
 
 @dataclass(slots=True)
 class Synapse:
-    source:             int
-    destination:        int
-    weight:             float
-    enabled:            bool
+    source:      int
+    destination: int
+    weight:      float
+    enabled:     bool
 
 class Organism:
-    def __init__(self, inputSize, outputSize):
+    def __init__(self, config, inputSize, outputSize):
+        self.config     = config
         self.inputSize  = inputSize + 1 # Accounting for bias node. I want it to be internal only
         self.outputSize = outputSize
         self.neurons    = set(range(self.inputSize + self.outputSize))
@@ -45,9 +46,11 @@ class Organism:
         self.fitness         = 0.0 # NOTE: Aaaaaghhhhhhh nooooooooo, separation of conceeeeeernsss
         self.adjustedFitness = 0.0
 
-        self.mutationChance_modifyWeight = 0.8
-        self.mutationChance_newSynapse   = 0.1
-        self.mutationChance_newNeuron    = 0.03
+        self.mutationChance_modifyWeight = config.mutationChanceModifyWeight
+        self.mutationChance_newSynapse   = config.mutationChanceNewSynapse
+        self.mutationChance_newNeuron    = config.mutationChanceNewNeuron
+        self.weightMutationScale         = config.weightMutationScale
+        self.resetWeightWhenMutatingIt   = config.resetWeightChance
 
     def clearMemory(self):
         self.memory.clear()
@@ -76,10 +79,10 @@ class Organism:
     def mutate(self, tracker):
         if rng.random() < self.mutationChance_modifyWeight:
             for synapse in self.synapses.values():
-                if rng.random() < 0.9:
-                    synapse.weight += rng.normal(0, 0.1)
-                else:
+                if rng.random() < self.resetWeightWhenMutatingIt:
                     synapse.weight = rng.normal(0, 1.0)
+                else:
+                    synapse.weight += rng.normal(0, self.weightMutationScale)
 
         if rng.random() < self.mutationChance_newSynapse:   
             validSources        = list(self.neurons)
@@ -111,7 +114,7 @@ class Organism:
                     break
 
     def reproduce(self, otherParent):
-        child = Organism(self.inputSize - 1, self.outputSize)
+        child = Organism(self.config, self.inputSize - 1, self.outputSize)
         child.neurons = set(self.neurons)
 
         for synapseID, synapse in self.synapses.items():
@@ -130,35 +133,40 @@ class Species:
         # TODO: Add age plus best member?
 
 class NEAT:
-    def __init__(self, populationSize, inputSize, outputSize):
-        self.populationSize = populationSize
+    def __init__(self, config, inputSize, outputSize):
+        self.config         = config
+        self.populationSize = config.populationSize
         self.inputSize      = inputSize
         self.outputSize     = outputSize
-        self.tracker        = InnovationTracker(inputSize, outputSize)
-        self.compatibilityThreshold = 3.0 # TODO: Rethink positioning
-        self.targetSpeciesCount     = 10
-
+        self.compatibilityThreshold       = config.defaultCompatibilityThreshold
+        self.compatibilityAdjustmentSpeed = config.compatibilityAdjustmentSpeed
+        self.targetSpeciesCount           = config.populationSize // config.targetSpeciesSize
+        self.lossWeight_E                 = config.lossWeightExcess
+        self.lossWeight_D                 = config.lossWeightDisjoint
+        self.lossWeight_W                 = config.lossWeightWeightsDifference
+        self.tracker = InnovationTracker(inputSize, outputSize)
 
     def getInitialPopulation(self):
         population = []
         for _ in range(self.populationSize):
-            organism = Organism(self.inputSize, self.outputSize)
+            organism = Organism(self.config, self.inputSize, self.outputSize)
             organism.initializeSynapses(self.tracker)
             population.append(organism)
         return population                
 
-    def getNewPopulation(self, population):
-        species = self.speciate(population) # TODO: We will want to preserve species across generations
+    def calculateDynamicCompatibilityThreshold(self, speciesCount):
+        if      speciesCount < self.targetSpeciesCount: self.compatibilityThreshold -= self.compatibilityAdjustmentSpeed
+        elif    speciesCount > self.targetSpeciesCount: self.compatibilityThreshold += self.compatibilityAdjustmentSpeed
+        return max(0.3, self.compatibilityThreshold)
 
-        if len(species) < self.targetSpeciesCount: self.compatibilityThreshold -= 0.1
-        elif len(species) > self.targetSpeciesCount: self.compatibilityThreshold += 0.1
-        self.compatibilityThreshold = max(0.3, self.compatibilityThreshold)
+    def getNewPopulation(self, population):
+        speciesList = self.speciate(population) # TODO: We will want to preserve species across generations
+        self.compatibilityThreshold = self.calculateDynamicCompatibilityThreshold(len(speciesList))
 
         newPopulation = []
         totalAdjustedFitness = 0
-        validSpecies = [s for s in species if len(s.members) > 0] # Useless for now, but maybe later when we preserve across gen?
 
-        for species in validSpecies:
+        for species in speciesList:
             species.members.sort(key=lambda organism: organism.fitness, reverse=True)
             minimumFitness = min(organism.fitness for organism in species.members)
             shift = 0 if minimumFitness > 0 else abs(minimumFitness)
@@ -175,8 +183,8 @@ class NEAT:
         while len(newPopulation) < self.populationSize:
             draw = rng.uniform(0, totalAdjustedFitness)
             currentThreshold = 0
-            selectedSpecies = validSpecies[0]
-            for species in validSpecies:
+            selectedSpecies = speciesList[0]
+            for species in speciesList:
                 currentThreshold += species.averageFitness
                 if currentThreshold > draw:
                     selectedSpecies = species
@@ -191,7 +199,6 @@ class NEAT:
             newPopulation.append(child)
         return newPopulation
 
-
     def speciate(self, population): # TODO: I'd prefer if species remained, not got erased every generation
         species = []
         for organism in population:
@@ -204,12 +211,12 @@ class NEAT:
                 species.append(Species(organism))
         return species
 
-    def calculateGeneticDistance(self, firstOrganism, secondOrganism):
-        synapseIDs1, synapseIDs2 = set(firstOrganism.synapses.keys()), set(secondOrganism.synapses.keys())
+    def calculateGeneticDistance(self, organism1, organism2):
+        synapseIDs1, synapseIDs2 = set(organism1.synapses.keys()), set(organism2.synapses.keys())
 
-        matchingSynapses = synapseIDs1 & synapseIDs2
-        if matchingSynapses:
-            weightsDifference = sum(abs(firstOrganism.synapses[key].weight - secondOrganism.synapses[key].weight) for key in matchingSynapses) / len(matchingSynapses)
+        matching = synapseIDs1 & synapseIDs2
+        if matching:
+            weightsDifference = sum(abs(organism1.synapses[key].weight - organism2.synapses[key].weight) for key in matching) / len(matching)
         else:
             weightsDifference = 0.0
 
@@ -224,15 +231,12 @@ class NEAT:
                 excessCount += 1
 
         maxSynapses = max(len(synapseIDs1), len(synapseIDs2))
-        c1 = 1 # FIXME not harcoding
-        c2 = 1
-        c3 = 0.4
-        return (c1*excessCount + c2*disjointCount)/maxSynapses + c3*weightsDifference
+        return (self.lossWeight_E*excessCount + self.lossWeight_D*disjointCount) / maxSynapses + self.lossWeight_W*weightsDifference
         
 
 def main(args):
     env = CleanLunarLander(gym.make("LunarLanderContinuous-v3", render_mode=None))
-    solver = NEAT(args.populationSize, inputSize=env.observationSize, outputSize=env.actionSize)
+    solver = NEAT(args, inputSize=env.observationSize, outputSize=env.actionSize)
     population = solver.getInitialPopulation()
 
     generation = 0
@@ -279,9 +283,20 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-n",  "--runName",                 type=str,   default="myNEATrun")
-    parser.add_argument("-p",  "--populationSize",          type=int,   default=150)
-    parser.add_argument("-t",  "--targetFitness",           type=float, default=300.0)
-    parser.add_argument("-ee", "--evaluationEpisodes",      type=int,   default=3)
+    parser.add_argument("-n",  "--runName",                       type=str,     default="myNEATrun")
+    parser.add_argument("-p",  "--populationSize",                type=int,     default=150)
+    parser.add_argument("-t",  "--targetFitness",                 type=float,   default=300.0)
+    parser.add_argument("-ee", "--evaluationEpisodes",            type=int,     default=3)
+    parser.add_argument("-ct", "--defaultCompatibilityThreshold", type=float,   default=3.0)
+    parser.add_argument("-cs", "--compatibilityAdjustmentSpeed",  type=float,   default=0.2)
+    parser.add_argument("-ss", "--targetSpeciesSize",             type=int,     default=15)
+    parser.add_argument("-le", "--lossWeightExcess",              type=float,   default=1.0)
+    parser.add_argument("-ld", "--lossWeightDisjoint",            type=float,   default=1.0)
+    parser.add_argument("-lw", "--lossWeightWeightsDifference",   type=float,   default=0.4)
+    parser.add_argument("-mw", "--mutationChanceModifyWeight",    type=float,   default=0.8)
+    parser.add_argument("-ms", "--mutationChanceNewSynapse",      type=float,   default=0.1)
+    parser.add_argument("-mn", "--mutationChanceNewNeuron",       type=float,   default=0.03)
+    parser.add_argument("-mr", "--resetWeightChance",             type=float,   default=0.1)
+    parser.add_argument("-ws", "--weightMutationScale",           type=float,   default=0.1)
 
     main(parser.parse_args())
