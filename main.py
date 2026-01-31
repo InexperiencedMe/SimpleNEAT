@@ -11,7 +11,7 @@ class InnovationTracker:
     def __init__(self, inputSize, outputSize):
         self.novelSynapses  = {}  # {(source, destination): novelSynapseID}
         self.novelNeurons   = {}  # {(source, destination): novelNeuronID}
-        self.neuronCount    = (inputSize + 1) + outputSize # inputs + bias node + outputs
+        self.neuronCount    = inputSize + outputSize
         self.synapseCount   = 0
 
     def getSynapseID(self, source, destination):
@@ -37,10 +37,12 @@ class Synapse:
 
 class Organism:
     def __init__(self, config, inputSize, outputSize):
-        self.config     = config
-        self.inputSize  = inputSize + 1 # Accounting for bias node. I want it to be internal only
-        self.outputSize = outputSize
-        self.neurons    = set(range(self.inputSize + self.outputSize))
+        self.config             = config
+        self.inputSize          = inputSize
+        self.inputSizeWithBias  = inputSize + 1
+        self.biasNode           = inputSize
+        self.outputSize         = outputSize
+        self.neurons    = set(range(self.inputSizeWithBias + self.outputSize)) # inputs + bias + outputs
         self.synapses   = {} # {synapseID: Synapse}
         self.memory     = defaultdict(float)
         self.fitness         = 0.0 # NOTE: Aaaaaghhhhhhh nooooooooo, separation of conceeeeeernsss
@@ -56,24 +58,23 @@ class Organism:
         self.memory.clear()
 
     def __call__(self, inputs):
-        inputs = np.append(inputs, 1.0) # Adding bias node
         for i, input in enumerate(inputs):
             self.memory[i] = input
+        self.memory[self.biasNode] = 1.0
         
         newState = defaultdict(float)
         for synapse in self.synapses.values():
             if synapse.enabled:
                 newState[synapse.destination] += self.memory[synapse.source] * synapse.weight
 
-        for neuron in self.neurons:
-            if neuron >= self.inputSize:
-                self.memory[neuron] = np.tanh(newState[neuron])
+        for neuronID, activatonInput in newState.items():
+            self.memory[neuronID] = np.tanh(activatonInput)
         
-        return np.array([self.memory[self.inputSize + i] for i in range(self.outputSize)])
+        return np.array([self.memory[self.inputSizeWithBias + i] for i in range(self.outputSize)])
     
     def initializeSynapses(self, tracker):
-        for input in range(self.inputSize):
-            for output in range(self.inputSize, self.inputSize + self.outputSize):
+        for input in range(self.inputSizeWithBias):
+            for output in range(self.inputSizeWithBias, self.inputSizeWithBias + self.outputSize):
                 self.synapses[tracker.getSynapseID(input, output)] = Synapse(input, output, rng.normal(0, 1.0), True)
 
     def mutate(self, tracker):
@@ -84,9 +85,9 @@ class Organism:
                 else:
                     synapse.weight += rng.normal(0, self.weightMutationScale)
 
-        if rng.random() < self.mutationChance_newSynapse:   
+        if rng.random() < self.mutationChance_newSynapse:
             validSources        = list(self.neurons)
-            validDestinations   = [n for n in self.neurons if n >= self.inputSize]
+            validDestinations   = [n for n in self.neurons if n >= self.inputSizeWithBias]
             existingLinks       = set((synapse.source, synapse.destination) for synapse in self.synapses.values())
             for _ in range(10): # Retrying is faster than listing possible new links
                 source        = int(rng.choice(validSources))
@@ -114,7 +115,7 @@ class Organism:
                     break
 
     def reproduce(self, otherParent):
-        child = Organism(self.config, self.inputSize - 1, self.outputSize)
+        child = Organism(self.config, self.inputSize, self.outputSize)
         child.neurons = set(self.neurons)
 
         for synapseID, synapse in self.synapses.items():
