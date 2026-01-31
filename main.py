@@ -129,9 +129,9 @@ class Organism:
 class Species:
     def __init__(self, representative):
         self.representative = representative
-        self.members = [representative]
+        self.members        = [representative]
         self.averageFitness = 0.0
-        # TODO: Add age plus best member?
+        # TODO: Add age and staleness?
 
 class NEAT:
     def __init__(self, config, inputSize, outputSize):
@@ -142,10 +142,12 @@ class NEAT:
         self.compatibilityThreshold       = config.defaultCompatibilityThreshold
         self.compatibilityAdjustmentSpeed = config.compatibilityAdjustmentSpeed
         self.targetSpeciesCount           = config.populationSize // config.targetSpeciesSize
+        self.survivalThreshold            = config.survivalThreshold
         self.lossWeight_E                 = config.lossWeightExcess
         self.lossWeight_D                 = config.lossWeightDisjoint
         self.lossWeight_W                 = config.lossWeightWeightsDifference
         self.tracker = InnovationTracker(inputSize, outputSize)
+        self.species = []
 
     def getInitialPopulation(self):
         population = []
@@ -155,22 +157,37 @@ class NEAT:
             population.append(organism)
         return population                
 
+    def speciate(self, population):
+        for species in self.species:
+            species.members = []
+
+        for organism in population:
+            placed = False
+            for species in self.species:
+                if self.calculateGeneticDistance(organism, species.representative) < self.compatibilityThreshold:
+                    species.members.append(organism)
+                    placed = True; break
+            if not placed:
+                self.species.append(Species(organism))
+
+        self.species = [species for species in self.species if len(species.members) > 0]
+
     def calculateDynamicCompatibilityThreshold(self, speciesCount):
         if      speciesCount < self.targetSpeciesCount: self.compatibilityThreshold -= self.compatibilityAdjustmentSpeed
         elif    speciesCount > self.targetSpeciesCount: self.compatibilityThreshold += self.compatibilityAdjustmentSpeed
         return max(0.3, self.compatibilityThreshold)
 
     def getNewPopulation(self, population):
-        speciesList = self.speciate(population) # TODO: We will want to preserve species across generations
-        self.compatibilityThreshold = self.calculateDynamicCompatibilityThreshold(len(speciesList))
+        self.speciate(population)
+        self.compatibilityThreshold = self.calculateDynamicCompatibilityThreshold(len(self.species))
 
         newPopulation = []
         totalAdjustedFitness = 0
 
-        for species in speciesList:
+        for species in self.species:
             species.members.sort(key=lambda organism: organism.fitness, reverse=True)
             minimumFitness = min(organism.fitness for organism in species.members)
-            shift = 0 if minimumFitness > 0 else abs(minimumFitness)
+            shift = abs(minimumFitness) if minimumFitness < 0 else 0
 
             averageSpeciesFitness = 0
             for organism in species.members:
@@ -179,19 +196,23 @@ class NEAT:
             species.averageFitness = averageSpeciesFitness
             totalAdjustedFitness += species.averageFitness
 
-            newPopulation.append(copy.deepcopy(species.members[0])) # Elitism
+            species.representative = species.members[0]
+
+            if len(species.members) >= 5:
+                newPopulation.append(copy.deepcopy(species.members[0])) # Elitism
 
         while len(newPopulation) < self.populationSize:
             draw = rng.uniform(0, totalAdjustedFitness)
             currentThreshold = 0
-            selectedSpecies = speciesList[0]
-            for species in speciesList:
+            selectedSpecies = self.species[0]
+            for species in self.species:
                 currentThreshold += species.averageFitness
                 if currentThreshold > draw:
                     selectedSpecies = species
                     break
             
-            pool = selectedSpecies.members[:max(1, len(selectedSpecies.members) // 2)] # Top 50%
+            survivalCutoff = max(1, int(len(selectedSpecies.members) * self.survivalThreshold))
+            pool = selectedSpecies.members[:survivalCutoff]
             parent1 = rng.choice(pool)
             parent2 = rng.choice(pool)
 
@@ -199,18 +220,6 @@ class NEAT:
             child.mutate(self.tracker)
             newPopulation.append(child)
         return newPopulation
-
-    def speciate(self, population): # TODO: I'd prefer if species remained, not got erased every generation
-        species = []
-        for organism in population:
-            placed = False
-            for specimen in species:
-                if self.calculateGeneticDistance(organism, specimen.representative) < self.compatibilityThreshold:
-                    specimen.members.append(organism)
-                    placed = True; break
-            if not placed:
-                species.append(Species(organism))
-        return species
 
     def calculateGeneticDistance(self, organism1, organism2):
         synapseIDs1, synapseIDs2 = set(organism1.synapses.keys()), set(organism2.synapses.keys())
@@ -255,10 +264,17 @@ def main(args):
                     state, reward, done = env.step(action)
                     fitnessScore += reward
                     if done: break
+
             organism.fitness = fitnessScore / args.evaluationEpisodes
-            if organism.fitness > maxFitnessEver: maxFitnessEver = organism.fitness; bestOrganism = organism
-            if organism.fitness > maxFitnessThisGeneration: maxFitnessThisGeneration = organism.fitness
             fitnessScoresThisGeneration += organism.fitness
+
+            if organism.fitness > maxFitnessEver:
+                maxFitnessEver = organism.fitness
+                bestOrganism = copy.deepcopy(organism)
+
+            if organism.fitness > maxFitnessThisGeneration:
+                maxFitnessThisGeneration = organism.fitness
+
         fitnessScoresThisGeneration /= args.populationSize
         print(f"Generation {generation:4}: Best This Generation: {maxFitnessThisGeneration:>8.2f} | Average This Generation: {fitnessScoresThisGeneration:>8.2f} | Best Overall: {maxFitnessEver:>8.2f}")
 
@@ -286,8 +302,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-n",  "--runName",                       type=str,     default="myNEATrun")
     parser.add_argument("-p",  "--populationSize",                type=int,     default=150)
-    parser.add_argument("-t",  "--targetFitness",                 type=float,   default=300.0)
-    parser.add_argument("-ee", "--evaluationEpisodes",            type=int,     default=3)
+    parser.add_argument("-t",  "--targetFitness",                 type=float,   default=320.0)
+    parser.add_argument("-st", "--survivalThreshold",             type=float,   default=0.2)
+    parser.add_argument("-ee", "--evaluationEpisodes",            type=int,     default=1)
     parser.add_argument("-ct", "--defaultCompatibilityThreshold", type=float,   default=3.0)
     parser.add_argument("-cs", "--compatibilityAdjustmentSpeed",  type=float,   default=0.2)
     parser.add_argument("-ss", "--targetSpeciesSize",             type=int,     default=15)
@@ -298,6 +315,6 @@ if __name__ == "__main__":
     parser.add_argument("-ms", "--mutationChanceNewSynapse",      type=float,   default=0.1)
     parser.add_argument("-mn", "--mutationChanceNewNeuron",       type=float,   default=0.03)
     parser.add_argument("-mr", "--resetWeightChance",             type=float,   default=0.1)
-    parser.add_argument("-ws", "--weightMutationScale",           type=float,   default=0.1)
+    parser.add_argument("-ws", "--weightMutationScale",           type=float,   default=0.5)
 
     main(parser.parse_args())
