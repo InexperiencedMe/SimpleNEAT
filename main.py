@@ -42,7 +42,7 @@ class Organism:
         self.inputSizeWithBias  = inputSize + 1
         self.biasNode           = inputSize
         self.outputSize         = outputSize
-        self.neurons    = set(range(self.inputSizeWithBias + self.outputSize)) # inputs + bias + outputs
+        self.neurons    = set(range(self.inputSizeWithBias + self.outputSize))
         self.synapses   = {} # {synapseID: Synapse}
         self.memory     = defaultdict(float)
         self.fitness         = 0.0 # NOTE: Aaaaaghhhhhhh nooooooooo, separation of conceeeeeernsss
@@ -123,7 +123,7 @@ class Organism:
                 chosen = synapse if rng.random() > 0.5 else otherParent.synapses[synapseID]
                 child.synapses[synapseID] = copy.deepcopy(chosen)
             else:
-                child.synapses[synapseID] = copy.deepcopy(synapse) # Assume self is fitter, so we take their disjoint genes
+                child.synapses[synapseID] = copy.deepcopy(synapse) # Assume self is fitter, so we take self's disjoint genes
         return child
 
 class Species:
