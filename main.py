@@ -5,8 +5,6 @@ import copy
 from dataclasses import dataclass
 from collections import defaultdict
 from environmentUtils import CleanLunarLander
-seed = 123
-rng = np.random.default_rng(seed)
 
 class InnovationTracker:
     def __init__(self, inputSize, outputSize):
@@ -302,6 +300,7 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-n",  "--runName",                       type=str,     default="myNEATrun")
+    parser.add_argument("-s",  "--seed",                          type=int,     default=123)
     parser.add_argument("-p",  "--populationSize",                type=int,     default=150)
     parser.add_argument("-t",  "--targetFitness",                 type=float,   default=320.0)
     parser.add_argument("-st", "--survivalThreshold",             type=float,   default=0.2)
@@ -318,4 +317,9 @@ if __name__ == "__main__":
     parser.add_argument("-mr", "--resetWeightChance",             type=float,   default=0.1)
     parser.add_argument("-ws", "--weightMutationScale",           type=float,   default=0.5)
 
-    main(parser.parse_args())
+    args = parser.parse_args()
+    
+    seed = args.seed
+    rng = np.random.default_rng(seed)
+
+    main(args)
