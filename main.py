@@ -188,16 +188,16 @@ class NEAT:
             minimumFitness = min(organism.fitness for organism in species.members)
             shift = abs(minimumFitness) if minimumFitness < 0 else 0
 
-            averageSpeciesFitness = 0
+            speciesAdjustedFitnessSum = 0
             for organism in species.members:
                 organism.adjustedFitness = (organism.fitness + shift) / len(species.members)
-                averageSpeciesFitness += organism.adjustedFitness
-            species.averageFitness = averageSpeciesFitness
+                speciesAdjustedFitnessSum += organism.adjustedFitness
+            species.averageFitness = speciesAdjustedFitnessSum / (len(species.members))
             totalAdjustedFitness += species.averageFitness
 
             species.representative = species.members[0]
 
-            if len(species.members) >= 5:
+            if len(species.members) >= self.targetSpeciesCount // 4:
                 newPopulation.append(copy.deepcopy(species.members[0])) # Elitism
 
         while len(newPopulation) < self.populationSize:
@@ -256,7 +256,7 @@ def main(args):
         for organism in population:
             fitnessScore = 0
             for _ in range(args.evaluationEpisodes):
-                state = env.reset(seed + generation)
+                state = env.reset(seed = rng.integers(0, 1000).item())
                 organism.clearMemory()
                 while True:
                     action = organism(state)
