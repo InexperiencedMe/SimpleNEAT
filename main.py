@@ -5,7 +5,8 @@ import copy
 from dataclasses import dataclass
 from collections import defaultdict
 from environmentUtils import CleanLunarLander
-rng = np.random.default_rng(123)
+seed = 123
+rng = np.random.default_rng(seed)
 
 class InnovationTracker:
     def __init__(self, inputSize, outputSize):
@@ -257,7 +258,7 @@ def main(args):
         for organism in population:
             fitnessScore = 0
             for _ in range(args.evaluationEpisodes):
-                state = env.reset()
+                state = env.reset(seed + generation)
                 organism.clearMemory()
                 while True:
                     action = organism(state)
