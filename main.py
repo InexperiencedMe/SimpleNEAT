@@ -44,8 +44,7 @@ class Organism:
         self.neurons    = set(range(self.inputSizeWithBias + self.outputSize))
         self.synapses   = {} # {synapseID: Synapse}
         self.memory     = defaultdict(float)
-        self.fitness         = 0.0 # NOTE: Aaaaaghhhhhhh nooooooooo, separation of conceeeeeernsss
-        self.adjustedFitness = 0.0
+        self.fitness    = 0.0 # NOTE: Aaaaaghhhhhhh nooooooooo, separation of conceeeeeernsss
 
         self.mutationChance_modifyWeight = config.mutationChanceModifyWeight
         self.mutationChance_newSynapse   = config.mutationChanceNewSynapse
@@ -214,8 +213,7 @@ class NEAT:
 
             speciesAdjustedFitnessSum = 0
             for organism in species.members:
-                organism.adjustedFitness = (organism.fitness + shift) / len(species.members)
-                speciesAdjustedFitnessSum += organism.adjustedFitness
+                speciesAdjustedFitnessSum += (organism.fitness + shift) / len(species.members)
             
             species.averageFitness = speciesAdjustedFitnessSum / len(species.members)
             totalAdjustedFitness += species.averageFitness
