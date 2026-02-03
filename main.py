@@ -140,7 +140,7 @@ class NEAT:
         self.outputSize     = outputSize
         self.tracker        = InnovationTracker(inputSize, outputSize)
         self.species        = []
-        
+
         self.compatibilityThreshold       = config.defaultCompatibilityThreshold
         self.compatibilityAdjustmentSpeed = config.compatibilityAdjustmentSpeed
         self.targetSpeciesSize            = config.targetSpeciesSize
@@ -338,7 +338,7 @@ if __name__ == "__main__":
     parser.add_argument("-cs", "--compatibilityAdjustmentSpeed",  type=float,   default=0.2)
     parser.add_argument("-le", "--lossWeightExcess",              type=float,   default=1.0)
     parser.add_argument("-ld", "--lossWeightDisjoint",            type=float,   default=1.0)
-    parser.add_argument("-lw", "--lossWeightWeightsDifference",   type=float,   default=0.4)
+    parser.add_argument("-lw", "--lossWeightWeightsDifference",   type=float,   default=0.0)
     parser.add_argument("-mw", "--mutationChanceModifyWeight",    type=float,   default=0.5)
     parser.add_argument("-ms", "--mutationChanceNewSynapse",      type=float,   default=0.1)
     parser.add_argument("-mn", "--mutationChanceNewNeuron",       type=float,   default=0.05)
