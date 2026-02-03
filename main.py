@@ -140,9 +140,11 @@ class NEAT:
         self.outputSize     = outputSize
         self.compatibilityThreshold       = config.defaultCompatibilityThreshold
         self.compatibilityAdjustmentSpeed = config.compatibilityAdjustmentSpeed
+        self.targetSpeciesSize            = config.targetSpeciesSize
         self.targetSpeciesCount           = config.populationSize // config.targetSpeciesSize
         self.survivalThreshold            = config.survivalThreshold
         self.stagnationThreshold          = config.stagnationThreshold
+        self.elitism                      = config.elitism
         self.lossWeight_E                 = config.lossWeightExcess
         self.lossWeight_D                 = config.lossWeightDisjoint
         self.lossWeight_W                 = config.lossWeightWeightsDifference
@@ -208,18 +210,20 @@ class NEAT:
         totalAdjustedFitness = 0
         newPopulation = []
         for species in self.species:
+            speciesSize = len(species.members)
+
             minimumFitness = min(organism.fitness for organism in species.members)
             shift = abs(minimumFitness) if minimumFitness < 0 else 0
 
             speciesAdjustedFitnessSum = 0
             for organism in species.members:
-                speciesAdjustedFitnessSum += (organism.fitness + shift) / len(species.members)
+                speciesAdjustedFitnessSum += (organism.fitness + shift) / speciesSize
             
-            species.averageFitness = speciesAdjustedFitnessSum / len(species.members)
+            species.averageFitness = speciesAdjustedFitnessSum / speciesSize
             totalAdjustedFitness += species.averageFitness
 
-            if len(species.members) >= self.targetSpeciesCount // 4:
-                newPopulation.append(copy.deepcopy(species.members[0])) # Elitism
+            if speciesSize >= self.targetSpeciesSize // 4:
+                newPopulation.extend(copy.deepcopy(species.members[:min(self.elitism, speciesSize)])) # Elitism
 
         while len(newPopulation) < self.populationSize:
             draw = rng.uniform(0, totalAdjustedFitness)
@@ -322,14 +326,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-n",  "--runName",                       type=str,     default="myNEATrun")
     parser.add_argument("-s",  "--seed",                          type=int,     default=123)
-    parser.add_argument("-p",  "--populationSize",                type=int,     default=150)
     parser.add_argument("-t",  "--targetFitness",                 type=float,   default=320.0)
+    parser.add_argument("-p",  "--populationSize",                type=int,     default=150)
+    parser.add_argument("-ss", "--targetSpeciesSize",             type=int,     default=15)
     parser.add_argument("-st", "--survivalThreshold",             type=float,   default=0.2)
+    parser.add_argument("-e",  "--elitism",                       type=int,     default=2)
     parser.add_argument("-sg", "--stagnationThreshold",           type=int,     default=50)
     parser.add_argument("-ee", "--evaluationEpisodes",            type=int,     default=3)
     parser.add_argument("-ct", "--defaultCompatibilityThreshold", type=float,   default=3.0)
     parser.add_argument("-cs", "--compatibilityAdjustmentSpeed",  type=float,   default=0.2)
-    parser.add_argument("-ss", "--targetSpeciesSize",             type=int,     default=15)
     parser.add_argument("-le", "--lossWeightExcess",              type=float,   default=1.0)
     parser.add_argument("-ld", "--lossWeightDisjoint",            type=float,   default=1.0)
     parser.add_argument("-lw", "--lossWeightWeightsDifference",   type=float,   default=0.4)
