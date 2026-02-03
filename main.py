@@ -130,7 +130,8 @@ class Species:
         self.representative = representative
         self.members        = [representative]
         self.averageFitness = 0.0
-        # TODO: Add age and staleness?
+        self.stagnation     = 0
+        self.maxFitnessEver = -np.inf
 
 class NEAT:
     def __init__(self, config, inputSize, outputSize):
@@ -142,6 +143,7 @@ class NEAT:
         self.compatibilityAdjustmentSpeed = config.compatibilityAdjustmentSpeed
         self.targetSpeciesCount           = config.populationSize // config.targetSpeciesSize
         self.survivalThreshold            = config.survivalThreshold
+        self.stagnationThreshold          = config.stagnationThreshold
         self.lossWeight_E                 = config.lossWeightExcess
         self.lossWeight_D                 = config.lossWeightDisjoint
         self.lossWeight_W                 = config.lossWeightWeightsDifference
@@ -180,11 +182,33 @@ class NEAT:
         self.speciate(population)
         self.compatibilityThreshold = self.calculateDynamicCompatibilityThreshold(len(self.species))
 
-        newPopulation = []
-        totalAdjustedFitness = 0
-
+        # Sort, Update Stagnation, Find Global Best
+        bestFitnessGlobal = -np.inf
         for species in self.species:
             species.members.sort(key=lambda organism: organism.fitness, reverse=True)
+            bestInSpecies = species.members[0]
+            species.representative = bestInSpecies
+
+            if bestInSpecies.fitness > species.maxFitnessEver:
+                species.stagnation = 0
+                species.maxFitnessEver = bestInSpecies.fitness
+            else:
+                species.stagnation += 1
+            
+            if bestInSpecies.fitness > bestFitnessGlobal: 
+                bestFitnessGlobal = bestInSpecies.fitness
+
+        # Remove stagnant unless contains best global member
+        nonstagnantSpecies = []
+        for species in self.species:
+            if species.stagnation < self.stagnationThreshold or species.members[0].fitness >= bestFitnessGlobal:
+                nonstagnantSpecies.append(species)
+        self.species = nonstagnantSpecies
+
+        # Calculate Adjusted Fitness for nonstagnant species
+        totalAdjustedFitness = 0
+        newPopulation = []
+        for species in self.species:
             minimumFitness = min(organism.fitness for organism in species.members)
             shift = abs(minimumFitness) if minimumFitness < 0 else 0
 
@@ -192,10 +216,9 @@ class NEAT:
             for organism in species.members:
                 organism.adjustedFitness = (organism.fitness + shift) / len(species.members)
                 speciesAdjustedFitnessSum += organism.adjustedFitness
-            species.averageFitness = speciesAdjustedFitnessSum / (len(species.members))
+            
+            species.averageFitness = speciesAdjustedFitnessSum / len(species.members)
             totalAdjustedFitness += species.averageFitness
-
-            species.representative = species.members[0]
 
             if len(species.members) >= self.targetSpeciesCount // 4:
                 newPopulation.append(copy.deepcopy(species.members[0])) # Elitism
@@ -304,18 +327,19 @@ if __name__ == "__main__":
     parser.add_argument("-p",  "--populationSize",                type=int,     default=150)
     parser.add_argument("-t",  "--targetFitness",                 type=float,   default=320.0)
     parser.add_argument("-st", "--survivalThreshold",             type=float,   default=0.2)
-    parser.add_argument("-ee", "--evaluationEpisodes",            type=int,     default=1)
+    parser.add_argument("-sg", "--stagnationThreshold",           type=int,     default=50)
+    parser.add_argument("-ee", "--evaluationEpisodes",            type=int,     default=3)
     parser.add_argument("-ct", "--defaultCompatibilityThreshold", type=float,   default=3.0)
     parser.add_argument("-cs", "--compatibilityAdjustmentSpeed",  type=float,   default=0.2)
     parser.add_argument("-ss", "--targetSpeciesSize",             type=int,     default=15)
     parser.add_argument("-le", "--lossWeightExcess",              type=float,   default=1.0)
     parser.add_argument("-ld", "--lossWeightDisjoint",            type=float,   default=1.0)
     parser.add_argument("-lw", "--lossWeightWeightsDifference",   type=float,   default=0.4)
-    parser.add_argument("-mw", "--mutationChanceModifyWeight",    type=float,   default=0.8)
+    parser.add_argument("-mw", "--mutationChanceModifyWeight",    type=float,   default=0.5)
     parser.add_argument("-ms", "--mutationChanceNewSynapse",      type=float,   default=0.1)
-    parser.add_argument("-mn", "--mutationChanceNewNeuron",       type=float,   default=0.03)
+    parser.add_argument("-mn", "--mutationChanceNewNeuron",       type=float,   default=0.05)
     parser.add_argument("-mr", "--resetWeightChance",             type=float,   default=0.1)
-    parser.add_argument("-ws", "--weightMutationScale",           type=float,   default=0.5)
+    parser.add_argument("-ws", "--weightMutationScale",           type=float,   default=0.01)
 
     args = parser.parse_args()
     
