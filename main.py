@@ -138,6 +138,9 @@ class NEAT:
         self.populationSize = config.populationSize
         self.inputSize      = inputSize
         self.outputSize     = outputSize
+        self.tracker        = InnovationTracker(inputSize, outputSize)
+        self.species        = []
+        
         self.compatibilityThreshold       = config.defaultCompatibilityThreshold
         self.compatibilityAdjustmentSpeed = config.compatibilityAdjustmentSpeed
         self.targetSpeciesSize            = config.targetSpeciesSize
@@ -148,8 +151,6 @@ class NEAT:
         self.lossWeight_E                 = config.lossWeightExcess
         self.lossWeight_D                 = config.lossWeightDisjoint
         self.lossWeight_W                 = config.lossWeightWeightsDifference
-        self.tracker = InnovationTracker(inputSize, outputSize)
-        self.species = []
 
     def getInitialPopulation(self):
         population = []
