@@ -44,7 +44,6 @@ class Organism:
         self.neurons    = set(range(self.inputSizeWithBias + self.outputSize))
         self.synapses   = {} # {synapseID: Synapse}
         self.memory     = defaultdict(float)
-        self.fitness    = 0.0 # NOTE: Aaaaaghhhhhhh nooooooooo, separation of conceeeeeernsss
 
         self.mutationChance_modifyWeight = config.mutationChanceModifyWeight
         self.mutationChance_newSynapse   = config.mutationChanceNewSynapse
@@ -127,10 +126,16 @@ class Organism:
 class Species:
     def __init__(self, representative):
         self.representative = representative
-        self.members        = [representative]
+        self.members        = [] # Stores tuples (Organism, fitness)
         self.averageFitness = 0.0
         self.stagnation     = 0
         self.maxFitnessEver = -np.inf
+
+    def addMember(self, organism, fitness):
+        self.members.append((organism, fitness))
+
+    def reset(self):
+        self.members = []
 
 class NEAT:
     def __init__(self, config, inputSize, outputSize):
@@ -160,18 +165,20 @@ class NEAT:
             population.append(organism)
         return population                
 
-    def speciate(self, population):
+    def speciate(self, evaluatedPopulation): # A list of (Organism, fitness)
         for species in self.species:
-            species.members = []
+            species.reset()
 
-        for organism in population:
+        for organism, fitness in evaluatedPopulation:
             placed = False
             for species in self.species:
                 if self.calculateGeneticDistance(organism, species.representative) < self.compatibilityThreshold:
-                    species.members.append(organism)
+                    species.addMember(organism, fitness)
                     placed = True; break
             if not placed:
-                self.species.append(Species(organism))
+                newSpecies = Species(representative=organism)
+                newSpecies.addMember(organism, fitness)
+                self.species.append(newSpecies)
 
         self.species = [species for species in self.species if len(species.members) > 0]
 
@@ -180,30 +187,32 @@ class NEAT:
         elif    speciesCount > self.targetSpeciesCount: self.compatibilityThreshold += self.compatibilityAdjustmentSpeed
         return max(0.3, self.compatibilityThreshold)
 
-    def getNewPopulation(self, population):
-        self.speciate(population)
+    def getNewPopulation(self, population, fitnessScores):
+        self.speciate(list(zip(population, fitnessScores)))
         self.compatibilityThreshold = self.calculateDynamicCompatibilityThreshold(len(self.species))
 
         # Sort, Update Stagnation, Find Global Best
         bestFitnessGlobal = -np.inf
         for species in self.species:
-            species.members.sort(key=lambda organism: organism.fitness, reverse=True)
-            bestInSpecies = species.members[0]
-            species.representative = bestInSpecies
+            species.members.sort(key=lambda member: member[1], reverse=True)
+            
+            bestOrganismInSpecies, bestFitnessInSpecies = species.members[0]
+            species.representative = bestOrganismInSpecies 
 
-            if bestInSpecies.fitness > species.maxFitnessEver:
+            if bestFitnessInSpecies > species.maxFitnessEver:
                 species.stagnation = 0
-                species.maxFitnessEver = bestInSpecies.fitness
+                species.maxFitnessEver = bestFitnessInSpecies
             else:
                 species.stagnation += 1
             
-            if bestInSpecies.fitness > bestFitnessGlobal: 
-                bestFitnessGlobal = bestInSpecies.fitness
+            if bestFitnessInSpecies > bestFitnessGlobal: 
+                bestFitnessGlobal = bestFitnessInSpecies
 
         # Remove stagnant unless contains best global member
         nonstagnantSpecies = []
         for species in self.species:
-            if species.stagnation < self.stagnationThreshold or species.members[0].fitness >= bestFitnessGlobal:
+            bestFitnessInSpecies = species.members[0][1]
+            if species.stagnation < self.stagnationThreshold or bestFitnessInSpecies >= bestFitnessGlobal:
                 nonstagnantSpecies.append(species)
         self.species = nonstagnantSpecies
 
@@ -213,19 +222,21 @@ class NEAT:
         for species in self.species:
             speciesSize = len(species.members)
 
-            minimumFitness = min(organism.fitness for organism in species.members)
+            minimumFitness = min(fitness for _, fitness in species.members)
             shift = abs(minimumFitness) if minimumFitness < 0 else 0
 
             speciesAdjustedFitnessSum = 0
-            for organism in species.members:
-                speciesAdjustedFitnessSum += (organism.fitness + shift) / speciesSize
+            for _, fitness in species.members:
+                speciesAdjustedFitnessSum += (fitness + shift) / speciesSize
             
             species.averageFitness = speciesAdjustedFitnessSum / speciesSize
             totalAdjustedFitness += species.averageFitness
 
             if speciesSize >= self.targetSpeciesSize // 4:
-                newPopulation.extend(copy.deepcopy(species.members[:min(self.elitism, speciesSize)])) # Elitism
+                elites = species.members[:min(self.elitism, speciesSize)]
+                newPopulation.extend(copy.deepcopy(organism) for organism, _ in elites)
 
+        # Creating new generation
         while len(newPopulation) < self.populationSize:
             draw = rng.uniform(0, totalAdjustedFitness)
             currentThreshold = 0
@@ -238,10 +249,11 @@ class NEAT:
             
             survivalCutoff = max(1, int(len(selectedSpecies.members) * self.survivalThreshold))
             pool = selectedSpecies.members[:survivalCutoff]
-            parent1 = rng.choice(pool)
-            parent2 = rng.choice(pool)
+            
+            (parent1, parent1fitness) = rng.choice(pool)
+            (parent2, parent2fitness) = rng.choice(pool)
 
-            child = parent1.reproduce(parent2) if parent1.fitness > parent2.fitness else parent2.reproduce(parent1)
+            child = parent1.reproduce(parent2) if parent1fitness > parent2fitness else parent2.reproduce(parent1)
             child.mutate(self.tracker)
             newPopulation.append(child)
         return newPopulation
@@ -276,9 +288,10 @@ def main(args):
 
     generation = 0
     maxFitnessEver = -np.inf
+    bestOrganism = None
     while True:
+        fitnessScores = []
         maxFitnessThisGeneration = -np.inf
-        fitnessScoresThisGeneration = 0
         for organism in population:
             fitnessScore = 0
             for _ in range(args.evaluationEpisodes):
@@ -289,25 +302,23 @@ def main(args):
                     state, reward, done = env.step(action)
                     fitnessScore += reward
                     if done: break
+            
+            evaluatedFitness = fitnessScore / args.evaluationEpisodes
+            fitnessScores.append(evaluatedFitness)
 
-            organism.fitness = fitnessScore / args.evaluationEpisodes
-            fitnessScoresThisGeneration += organism.fitness
-
-            if organism.fitness > maxFitnessEver:
-                maxFitnessEver = organism.fitness
+            if evaluatedFitness > maxFitnessEver:
+                maxFitnessEver = evaluatedFitness
                 bestOrganism = copy.deepcopy(organism)
+            if evaluatedFitness > maxFitnessThisGeneration:
+                maxFitnessThisGeneration = evaluatedFitness
 
-            if organism.fitness > maxFitnessThisGeneration:
-                maxFitnessThisGeneration = organism.fitness
+        avgFitness = np.mean(fitnessScores)
+        print(f"Generation {generation:4}: Best this generation: {maxFitnessThisGeneration:>8.2f} | Average: {avgFitness:8.2f} | Best Ever: {maxFitnessEver:8.2f}")
 
-        fitnessScoresThisGeneration /= args.populationSize
-        print(f"Generation {generation:4}: Best This Generation: {maxFitnessThisGeneration:>8.2f} | Average This Generation: {fitnessScoresThisGeneration:>8.2f} | Best Overall: {maxFitnessEver:>8.2f}")
-
-        endConditionMet = np.max(maxFitnessEver) >= args.targetFitness
-        if endConditionMet:
+        if maxFitnessEver >= args.targetFitness:
             break
         else:
-            population = solver.getNewPopulation(population)
+            population = solver.getNewPopulation(population, fitnessScores)
             generation += 1
 
     # Visualize the winner
