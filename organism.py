@@ -1,0 +1,101 @@
+import numpy as np
+import copy
+from dataclasses import dataclass
+from collections import defaultdict
+
+@dataclass(slots=True)
+class Synapse:
+    source:      int
+    destination: int
+    weight:      float
+    enabled:     bool
+
+class Organism:
+    def __init__(self, config, inputSize, outputSize, rng):
+        self.config             = config
+        self.inputSize          = inputSize
+        self.inputSizeWithBias  = inputSize + 1
+        self.biasNode           = inputSize
+        self.outputSize         = outputSize
+        self.neurons    = set(range(self.inputSizeWithBias + self.outputSize))
+        self.synapses   = {} # {synapseID: Synapse}
+        self.memory     = defaultdict(float)
+        self.rng        = rng
+
+        self.mutationChance_modifyWeight = config.mutationChanceModifyWeight
+        self.mutationChance_newSynapse   = config.mutationChanceNewSynapse
+        self.mutationChance_newNeuron    = config.mutationChanceNewNeuron
+        self.weightMutationScale         = config.weightMutationScale
+        self.resetWeightWhenMutatingIt   = config.resetWeightChance
+
+    def clearMemory(self):
+        self.memory.clear()
+
+    def __call__(self, inputs):
+        for i, input in enumerate(inputs):
+            self.memory[i] = input
+        self.memory[self.biasNode] = 1.0
+        
+        newState = defaultdict(float)
+        for synapse in self.synapses.values():
+            if synapse.enabled:
+                newState[synapse.destination] += self.memory[synapse.source] * synapse.weight
+
+        for neuronID, activatonInput in newState.items():
+            self.memory[neuronID] = np.tanh(activatonInput)
+        
+        return np.array([self.memory[self.inputSizeWithBias + i] for i in range(self.outputSize)])
+    
+    def initializeSynapses(self, tracker):
+        for input in range(self.inputSizeWithBias):
+            for output in range(self.inputSizeWithBias, self.inputSizeWithBias + self.outputSize):
+                self.synapses[tracker.getSynapseID(input, output)] = Synapse(input, output, self.rng.normal(0, 1.0), True)
+
+    def mutate(self, tracker):
+        if self.rng.random() < self.mutationChance_modifyWeight:
+            for synapse in self.synapses.values():
+                if self.rng.random() < self.resetWeightWhenMutatingIt:
+                    synapse.weight = self.rng.normal(0, 1.0)
+                else:
+                    synapse.weight += self.rng.normal(0, self.weightMutationScale)
+
+        if self.rng.random() < self.mutationChance_newSynapse:
+            validSources        = list(self.neurons)
+            validDestinations   = [n for n in self.neurons if n >= self.inputSizeWithBias]
+            existingLinks       = set((synapse.source, synapse.destination) for synapse in self.synapses.values())
+            for _ in range(10): # Retrying is faster than listing possible new links
+                source        = int(self.rng.choice(validSources))
+                destination   = int(self.rng.choice(validDestinations))
+                link = (source, destination)
+                if link not in existingLinks:
+                    self.synapses[tracker.getSynapseID(source, destination)] = Synapse(source, destination, self.rng.normal(0, 1.0), True)
+                    break
+        
+        if self.rng.random() < self.mutationChance_newNeuron and self.synapses:
+            synapseKeys = list(self.synapses.keys())
+            for _ in range(10):
+                synapseToSplit = self.synapses[self.rng.choice(synapseKeys)]
+                if synapseToSplit.enabled:
+                    synapseToSplit.enabled = False
+
+                    newNeuron = tracker.getNeuronID(synapseToSplit.source, synapseToSplit.destination)
+                    self.neurons.add(newNeuron)
+
+                    newLinkID1 = tracker.getSynapseID(synapseToSplit.source, newNeuron)
+                    self.synapses[newLinkID1] = Synapse(synapseToSplit.source, newNeuron, 1.0, True)
+
+                    newLinkID2 = tracker.getSynapseID(newNeuron, synapseToSplit.destination)
+                    self.synapses[newLinkID2] = Synapse(newNeuron, synapseToSplit.destination, synapseToSplit.weight, True)
+                    break
+
+    def reproduce(self, otherParent):
+        child = Organism(self.config, self.inputSize, self.outputSize, self.rng)
+        child.neurons = set(self.neurons)
+
+        for synapseID, synapse in self.synapses.items():
+            if synapseID in otherParent.synapses:
+                chosen = synapse if self.rng.random() > 0.5 else otherParent.synapses[synapseID]
+                child.synapses[synapseID] = copy.deepcopy(chosen)
+            else:
+                child.synapses[synapseID] = copy.deepcopy(synapse) # Assume self is fitter, so we take self's disjoint genes
+        return child
