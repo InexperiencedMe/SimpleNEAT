@@ -3,12 +3,15 @@ import gymnasium as gym
 import argparse
 import copy
 import multiprocessing
-from environmentUtils import CleanLunarLander
-from NEAT import NEAT
+import signal
+from utils.environmentUtils import CleanLunarLander
+from SimpleNEAT.NEAT import NEAT
         
 workerEnvironment = None
 
 def initializeWorker():
+    signal.signal(signal.SIGINT, signal.SIG_IGN) # Ignore C-c, parent will handle it
+
     global workerEnvironment
     workerEnvironment = CleanLunarLander(gym.make("LunarLanderContinuous-v3", render_mode=None))
 
@@ -40,40 +43,48 @@ def main(args):
     bestOrganism = None
     
     with multiprocessing.Pool(processes=multiprocessing.cpu_count(), initializer=initializeWorker) as pool:
-        while True:
-            seedsMatrix = rng.integers(0, 1000, size=(args.populationSize, args.evaluationEpisodes))
+        try:
+            while True:
+                seedsMatrix = rng.integers(0, 1000, size=(args.populationSize, args.evaluationEpisodes))
 
-            fitnessScores = pool.starmap(evaluateOrganism, zip(population, seedsMatrix))
-            
-            maxFitnessThisGeneration = -np.inf
-            for i, evaluatedFitness in enumerate(fitnessScores):
-                if evaluatedFitness > maxFitnessEver:
-                    maxFitnessEver = evaluatedFitness
-                    bestOrganism = copy.deepcopy(population[i])
-                if evaluatedFitness > maxFitnessThisGeneration:
-                    maxFitnessThisGeneration = evaluatedFitness
+                result = pool.starmap_async(evaluateOrganism, zip(population, seedsMatrix))
+                fitnessScores = result.get(timeout=999999) 
+                
+                maxFitnessThisGeneration = -np.inf
+                for i, evaluatedFitness in enumerate(fitnessScores):
+                    if evaluatedFitness > maxFitnessEver:
+                        maxFitnessEver = evaluatedFitness
+                        bestOrganism = copy.deepcopy(population[i])
+                    if evaluatedFitness > maxFitnessThisGeneration:
+                        maxFitnessThisGeneration = evaluatedFitness
 
-            avgFitness = np.mean(fitnessScores)
-            print(f"Generation {generation:4}: Best this generation: {maxFitnessThisGeneration:>8.2f} | Average: {avgFitness:8.2f} | Best Ever: {maxFitnessEver:8.2f}")
+                avgFitness = np.mean(fitnessScores)
+                print(f"Generation {generation:4}: Best this generation: {maxFitnessThisGeneration:>8.2f} | Average: {avgFitness:8.2f} | Best Ever: {maxFitnessEver:8.2f}")
 
-            if maxFitnessEver >= args.targetFitness:
-                break
-            else:
-                population = solver.getNewPopulation(population, fitnessScores)
-                generation += 1
+                if maxFitnessEver >= args.targetFitness:
+                    break
+                else:
+                    population = solver.getNewPopulation(population, fitnessScores)
+                    generation += 1
 
-    # Visualize the winner
-    env = CleanLunarLander(gym.make("LunarLanderContinuous-v3", render_mode="human"))
-    for i in range(20):
-        state = env.reset()
-        bestOrganism.clearMemory()
-        fitnessScore = 0
-        while True:
-            action = bestOrganism(state)
-            state, reward, done = env.step(action)
-            fitnessScore += reward
-            if done: break
-        print(f"Episode {i+1} Reward: {fitnessScore:.2f}")
+            # Visualize the winner
+            env = CleanLunarLander(gym.make("LunarLanderContinuous-v3", render_mode="human"))
+            for i in range(20):
+                state = env.reset()
+                bestOrganism.clearMemory()
+                fitnessScore = 0
+                while True:
+                    action = bestOrganism(state)
+                    state, reward, done = env.step(action)
+                    fitnessScore += reward
+                    if done: break
+                print(f"Episode {i+1} Reward: {fitnessScore:.2f}")
+
+        except KeyboardInterrupt:
+            pool.terminate()
+            pool.join()
+        finally:
+            pool.close()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

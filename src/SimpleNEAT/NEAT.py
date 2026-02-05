@@ -1,8 +1,8 @@
 import numpy as np
 import copy
-from innovationTracker import InnovationTracker
-from organism import Organism
-from species import Species
+from SimpleNEAT.innovationTracker import InnovationTracker
+from SimpleNEAT.organism import Organism
+from SimpleNEAT.species import Species
 
 class NEAT:
     def __init__(self, config, inputSize, outputSize, rng=None):
