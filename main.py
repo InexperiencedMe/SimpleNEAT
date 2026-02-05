@@ -277,7 +277,7 @@ class NEAT:
             else:
                 excessCount += 1
 
-        maxSynapses = max(len(synapseIDs1), len(synapseIDs2))
+        maxSynapses = max(len(synapseIDs1), len(synapseIDs2), 1)
         return (self.lossWeight_E*excessCount + self.lossWeight_D*disjointCount) / maxSynapses + self.lossWeight_W*weightsDifference
         
 
