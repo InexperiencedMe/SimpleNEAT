@@ -88,7 +88,7 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-n",  "--runName",                       type=str,     default="myNEATrun")
+    parser.add_argument("-n",  "--runName",                       type=str,     default="lunarLanderNEAT")
     parser.add_argument("-s",  "--seed",                          type=int,     default=123)
     parser.add_argument("-t",  "--targetFitness",                 type=float,   default=320.0)
     parser.add_argument("-p",  "--populationSize",                type=int,     default=150)
