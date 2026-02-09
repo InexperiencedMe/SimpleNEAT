@@ -22,12 +22,6 @@ class Organism:
         self.memory     = defaultdict(float)
         self.rng        = rng
 
-        self.mutationChance_modifyWeight = config.mutationChanceModifyWeight
-        self.mutationChance_newSynapse   = config.mutationChanceNewSynapse
-        self.mutationChance_newNeuron    = config.mutationChanceNewNeuron
-        self.weightMutationScale         = config.weightMutationScale
-        self.resetWeightWhenMutatingIt   = config.resetWeightChance
-
     def clearMemory(self):
         self.memory.clear()
 
@@ -52,14 +46,14 @@ class Organism:
                 self.synapses[tracker.getSynapseID(input, output)] = Synapse(input, output, self.rng.normal(0, 1.0), True)
 
     def mutate(self, tracker):
-        if self.rng.random() < self.mutationChance_modifyWeight:
+        if self.rng.random() < self.config.mutationChanceModifyWeight:
             for synapse in self.synapses.values():
-                if self.rng.random() < self.resetWeightWhenMutatingIt:
+                if self.rng.random() < self.config.resetWeightChance:
                     synapse.weight = self.rng.normal(0, 1.0)
                 else:
-                    synapse.weight += self.rng.normal(0, self.weightMutationScale)
+                    synapse.weight += self.rng.normal(0, self.config.weightMutationScale)
 
-        if self.rng.random() < self.mutationChance_newSynapse:
+        if self.rng.random() < self.config.mutationChanceNewSynapse:
             validSources        = list(self.neurons)
             validDestinations   = [n for n in self.neurons if n >= self.inputSizeWithBias]
             existingLinks       = set((synapse.source, synapse.destination) for synapse in self.synapses.values())
@@ -71,7 +65,7 @@ class Organism:
                     self.synapses[tracker.getSynapseID(source, destination)] = Synapse(source, destination, self.rng.normal(0, 1.0), True)
                     break
         
-        if self.rng.random() < self.mutationChance_newNeuron and self.synapses:
+        if self.rng.random() < self.config.mutationChanceNewNeuron and self.synapses:
             synapseKeys = list(self.synapses.keys())
             for _ in range(10):
                 synapseToSplit = self.synapses[self.rng.choice(synapseKeys)]

@@ -1,6 +1,6 @@
 import os
 import yaml
-from attridict import attridict
+import attridict
 
 def loadConfig(filename, folder="configs"):
     if not filename.endswith(".yml"):

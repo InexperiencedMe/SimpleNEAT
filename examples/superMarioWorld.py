@@ -6,6 +6,7 @@ import multiprocessing
 import signal
 import pygame as pg
 from SimpleNEAT.NEAT import NEAT
+from SimpleNEAT.utils import loadConfig
 
 # --- Environment Wrapper ---
 class CleanMario:
@@ -181,23 +182,5 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-n",  "--runName",                       type=str,     default="marioNEAT")
-    parser.add_argument("-s",  "--seed",                          type=int,     default=123)
-    parser.add_argument("-t",  "--targetFitness",                 type=float,   default=10000.0)
-    parser.add_argument("-p",  "--populationSize",                type=int,     default=100)
-    parser.add_argument("-ss", "--targetSpeciesSize",             type=int,     default=10)
-    parser.add_argument("-st", "--survivalThreshold",             type=float,   default=0.2)
-    parser.add_argument("-e",  "--elitism",                       type=int,     default=2)
-    parser.add_argument("-sg", "--stagnationThreshold",           type=int,     default=30)
-    parser.add_argument("-ee", "--evaluationEpisodes",            type=int,     default=1)
-    parser.add_argument("-ct", "--defaultCompatibilityThreshold", type=float,   default=3.0)
-    parser.add_argument("-cs", "--compatibilityAdjustmentSpeed",  type=float,   default=0.2)
-    parser.add_argument("-le", "--lossWeightExcess",              type=float,   default=1.0)
-    parser.add_argument("-ld", "--lossWeightDisjoint",            type=float,   default=1.0)
-    parser.add_argument("-lw", "--lossWeightWeightsDifference",   type=float,   default=0.0)
-    parser.add_argument("-mw", "--mutationChanceModifyWeight",    type=float,   default=0.8)
-    parser.add_argument("-ms", "--mutationChanceNewSynapse",      type=float,   default=0.05)
-    parser.add_argument("-mn", "--mutationChanceNewNeuron",       type=float,   default=0.03)
-    parser.add_argument("-mr", "--resetWeightChance",             type=float,   default=0.1)
-    parser.add_argument("-ws", "--weightMutationScale",           type=float,   default=0.01)
-    main(parser.parse_args())
+    parser.add_argument("-c", "--config", type=str, default="superMarioWorld")
+    main(loadConfig(parser.parse_args().config))

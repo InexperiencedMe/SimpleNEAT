@@ -6,6 +6,7 @@ import multiprocessing
 import signal
 from gymnasium.spaces.utils import flatdim
 from SimpleNEAT.NEAT import NEAT
+from SimpleNEAT.utils import loadConfig
 
 class CleanLunarLander(gym.Wrapper):
     def __init__(self, env):
@@ -46,10 +47,10 @@ def evaluateOrganism(organism, seeds):
             
     return rewardsSum / len(seeds)
 
-def main(args):
-    rng = np.random.default_rng(args.seed)
+def main(config):
+    rng = np.random.default_rng(config.seed)
     temporaryEnv = CleanLunarLander(gym.make("LunarLanderContinuous-v3", render_mode=None))
-    solver = NEAT(args, inputSize=temporaryEnv.observationSize, outputSize=temporaryEnv.actionSize, rng=rng)
+    solver = NEAT(config, inputSize=temporaryEnv.observationSize, outputSize=temporaryEnv.actionSize, rng=rng)
     temporaryEnv.close()
     
     population = solver.getInitialPopulation()
@@ -61,7 +62,7 @@ def main(args):
     with multiprocessing.Pool(processes=multiprocessing.cpu_count(), initializer=initializeWorker) as pool:
         try:
             while True:
-                seedsMatrix = rng.integers(0, 1000, size=(args.populationSize, args.evaluationEpisodes))
+                seedsMatrix = rng.integers(0, 1000, size=(config.populationSize, config.evaluationEpisodes))
 
                 result = pool.starmap_async(evaluateOrganism, zip(population, seedsMatrix))
                 fitnessScores = result.get(timeout=999999) 
@@ -77,7 +78,7 @@ def main(args):
                 avgFitness = np.mean(fitnessScores)
                 print(f"Generation {generation:4}: Best this generation: {maxFitnessThisGeneration:>8.2f} | Average: {avgFitness:8.2f} | Best Ever: {maxFitnessEver:8.2f}")
 
-                if maxFitnessEver >= args.targetFitness:
+                if maxFitnessEver >= config.targetFitness:
                     break
                 else:
                     population = solver.getNewPopulation(population, fitnessScores)
@@ -104,23 +105,5 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-n",  "--runName",                       type=str,     default="lunarLanderNEAT")
-    parser.add_argument("-s",  "--seed",                          type=int,     default=123)
-    parser.add_argument("-t",  "--targetFitness",                 type=float,   default=320.0)
-    parser.add_argument("-p",  "--populationSize",                type=int,     default=150)
-    parser.add_argument("-ss", "--targetSpeciesSize",             type=int,     default=15)
-    parser.add_argument("-st", "--survivalThreshold",             type=float,   default=0.2)
-    parser.add_argument("-e",  "--elitism",                       type=int,     default=2)
-    parser.add_argument("-sg", "--stagnationThreshold",           type=int,     default=50)
-    parser.add_argument("-ee", "--evaluationEpisodes",            type=int,     default=3)
-    parser.add_argument("-ct", "--defaultCompatibilityThreshold", type=float,   default=3.0)
-    parser.add_argument("-cs", "--compatibilityAdjustmentSpeed",  type=float,   default=0.2)
-    parser.add_argument("-le", "--lossWeightExcess",              type=float,   default=1.0)
-    parser.add_argument("-ld", "--lossWeightDisjoint",            type=float,   default=1.0)
-    parser.add_argument("-lw", "--lossWeightWeightsDifference",   type=float,   default=0.0)
-    parser.add_argument("-mw", "--mutationChanceModifyWeight",    type=float,   default=0.5)
-    parser.add_argument("-ms", "--mutationChanceNewSynapse",      type=float,   default=0.1)
-    parser.add_argument("-mn", "--mutationChanceNewNeuron",       type=float,   default=0.05)
-    parser.add_argument("-mr", "--resetWeightChance",             type=float,   default=0.1)
-    parser.add_argument("-ws", "--weightMutationScale",           type=float,   default=0.01)
-    main(parser.parse_args())
+    parser.add_argument("-c", "--config", type=str, default="lunarLander")
+    main(loadConfig(parser.parse_args().config))

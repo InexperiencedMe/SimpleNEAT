@@ -15,21 +15,13 @@ class NEAT:
         self.species        = []
 
         self.compatibilityThreshold       = config.defaultCompatibilityThreshold
-        self.compatibilityAdjustmentSpeed = config.compatibilityAdjustmentSpeed
-        self.targetSpeciesSize            = config.targetSpeciesSize
         self.targetSpeciesCount           = config.populationSize // config.targetSpeciesSize
-        self.survivalThreshold            = config.survivalThreshold
-        self.stagnationThreshold          = config.stagnationThreshold
-        self.elitism                      = config.elitism
-        self.lossWeight_E                 = config.lossWeightExcess
-        self.lossWeight_D                 = config.lossWeightDisjoint
-        self.lossWeight_W                 = config.lossWeightWeightsDifference
 
     def getInitialPopulation(self):
         population = []
         for _ in range(self.populationSize):
             organism = Organism(self.config, self.inputSize, self.outputSize, self.rng)
-            organism.initializeSynapses(self.tracker)
+            if self.config.initializeSynapses: organism.initializeSynapses(self.tracker)
             population.append(organism)
         return population                
 
@@ -51,8 +43,8 @@ class NEAT:
         self.species = [species for species in self.species if len(species.members) > 0]
 
     def calculateDynamicCompatibilityThreshold(self, speciesCount):
-        if      speciesCount < self.targetSpeciesCount: self.compatibilityThreshold -= self.compatibilityAdjustmentSpeed
-        elif    speciesCount > self.targetSpeciesCount: self.compatibilityThreshold += self.compatibilityAdjustmentSpeed
+        if      speciesCount < self.targetSpeciesCount: self.compatibilityThreshold -= self.config.compatibilityAdjustmentSpeed
+        elif    speciesCount > self.targetSpeciesCount: self.compatibilityThreshold += self.config.compatibilityAdjustmentSpeed
         return max(0.3, self.compatibilityThreshold)
 
     def getNewPopulation(self, population, fitnessScores):
@@ -80,7 +72,7 @@ class NEAT:
         nonstagnantSpecies = []
         for species in self.species:
             bestFitnessInSpecies = species.members[0][1]
-            if species.stagnation < self.stagnationThreshold or bestFitnessInSpecies >= bestFitnessGlobal:
+            if species.stagnation < self.config.stagnationThreshold or bestFitnessInSpecies >= bestFitnessGlobal:
                 nonstagnantSpecies.append(species)
         self.species = nonstagnantSpecies
 
@@ -100,8 +92,8 @@ class NEAT:
             species.averageFitness = speciesAdjustedFitnessSum / speciesSize
             totalAdjustedFitness += species.averageFitness
 
-            if speciesSize >= self.targetSpeciesSize // 4:
-                elites = species.members[:min(self.elitism, speciesSize)]
+            if speciesSize >= self.config.targetSpeciesSize // 4:
+                elites = species.members[:min(self.config.elitism, speciesSize)]
                 newPopulation.extend(copy.deepcopy(organism) for organism, _ in elites)
 
         # Creating new generation
@@ -115,7 +107,7 @@ class NEAT:
                     selectedSpecies = species
                     break
             
-            survivalCutoff = max(1, int(len(selectedSpecies.members) * self.survivalThreshold))
+            survivalCutoff = max(1, int(len(selectedSpecies.members) * self.config.survivalThreshold))
             pool = selectedSpecies.members[:survivalCutoff]
             
             (parent1, parent1fitness) = self.rng.choice(pool)
@@ -146,4 +138,4 @@ class NEAT:
                 excessCount += 1
 
         maxSynapses = max(len(synapseIDs1), len(synapseIDs2), 1)
-        return (self.lossWeight_E*excessCount + self.lossWeight_D*disjointCount) / maxSynapses + self.lossWeight_W*weightsDifference
+        return (self.config.lossWeight_E*excessCount + self.config.lossWeight_D*disjointCount) / maxSynapses + self.config.lossWeight_W*weightsDifference

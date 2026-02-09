@@ -1,0 +1,26 @@
+runName: "superMarioWorldNEAT"
+seed: 123
+
+# Main
+targetFitness:                  10000.0
+populationSize:                 100
+targetSpeciesSize:              10
+survivalThreshold:              0.2
+elitism:                        2
+stagnationThreshold:            30
+evaluationEpisodes:             1
+initializeSynapses:             False
+
+# Mutations
+mutationChanceModifyWeight:     0.5
+mutationChanceNewSynapse:       0.1
+mutationChanceNewNeuron:        0.05
+resetWeightChance:              0.1
+weightMutationScale:            0.01
+
+# Rarely Modified
+defaultCompatibilityThreshold:  3.0
+compatibilityAdjustmentSpeed:   0.2
+lossWeight_E:                   1.0
+lossWeight_D:                   1.0
+lossWeight_W:                   0.0
