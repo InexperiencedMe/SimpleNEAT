@@ -54,9 +54,9 @@ def main(config):
     
     population = solver.getInitialPopulation()
 
-    generation = 0
-    maxFitnessEver = -np.inf
-    bestOrganism = None
+    generation      = 0
+    maxFitnessEver  = -np.inf
+    bestOrganism    = None
     with multiprocessing.Pool(processes=multiprocessing.cpu_count(), initializer=initializeWorker) as pool:
         try:
             while True:
@@ -84,6 +84,7 @@ def main(config):
                     generation += 1
 
         except KeyboardInterrupt:
+            print("Training terminated early by the user")
             pool.terminate()
             pool.join()
         finally:

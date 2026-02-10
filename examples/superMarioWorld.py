@@ -104,7 +104,7 @@ def main(config):
                     generation += 1
 
         except KeyboardInterrupt:
-            print("\nInterrupted by user.")
+            print("Training terminated early by the user")
             pool.terminate()
             pool.join()
         finally:
@@ -117,39 +117,31 @@ def main(config):
     clock = pg.time.Clock()
     
     env = CleanMario(retro.make("SuperMarioWorld-Snes-v0", state="DonutPlains1", render_mode="rgb_array"))
-    try:
-        for i in range(3):
-            state = env.reset()
-            bestOrganism.clearMemory()
-            fitnessScore = 0
-            while True:
-                rawFrame = env.render()
-                surface = pg.surfarray.make_surface(rawFrame.swapaxes(0, 1))
-                win.blit(pg.transform.scale(surface, (768, 672)), (0, 0))
-                pg.display.flip()
+    quitReplay = False
+    while not quitReplay:
+        state = env.reset()
+        bestOrganism.clearMemory()
+        fitnessScore = 0
+        while True:
+            frame = env.render()
+            surface = pg.surfarray.make_surface(frame.swapaxes(0, 1))
+            win.blit(pg.transform.scale(surface, (768, 672)), (0, 0))
+            pg.display.flip()
 
-                action = bestOrganism(state)
-                state, reward, done = env.step(action)
-                
-                fitnessScore += reward
-                
-                quit_replay = False
-                for event in pg.event.get():
-                    if event.type == pg.QUIT:
-                        quit_replay = True
-                
-                if done or quit_replay: 
-                    break
+            action = bestOrganism(state)
+            state, reward, done = env.step(action)
+            
+            fitnessScore += reward
+            
+            for event in pg.event.get():
+                if event.type == pg.QUIT: quitReplay = True
+            
+            if done or quitReplay: 
+                break
 
-                clock.tick(60)
-            print(f"Episode {i+1} Reward: {fitnessScore:.2f}")
+            clock.tick(60)
+        print(f"Best organism showcase reward: {fitnessScore:.2f}")
                 
-    except Exception as e:
-        print(f"Visualization error: {e}")
-    finally:
-        env.close()
-        pg.quit()
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--config", type=str, default="superMarioWorld")
