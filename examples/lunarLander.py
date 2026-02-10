@@ -44,7 +44,6 @@ def evaluateOrganism(organism, seeds):
             state, reward, done = workerEnvironment.step(action)
             rewardsSum += reward
             if done: break
-            
     return rewardsSum / len(seeds)
 
 def main(config):
@@ -58,7 +57,6 @@ def main(config):
     generation = 0
     maxFitnessEver = -np.inf
     bestOrganism = None
-    
     with multiprocessing.Pool(processes=multiprocessing.cpu_count(), initializer=initializeWorker) as pool:
         try:
             while True:
@@ -79,6 +77,7 @@ def main(config):
                 print(f"Generation {generation:4}: Best this generation: {maxFitnessThisGeneration:>8.2f} | Average: {avgFitness:8.2f} | Best Ever: {maxFitnessEver:8.2f}")
 
                 if maxFitnessEver >= config.targetFitness:
+                    print("Target fitness reached!")
                     break
                 else:
                     population = solver.getNewPopulation(population, fitnessScores)

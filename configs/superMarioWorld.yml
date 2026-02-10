@@ -9,7 +9,7 @@ survivalThreshold:              0.2
 elitism:                        2
 stagnationThreshold:            30
 evaluationEpisodes:             1
-initializeSynapses:             False
+initializeSynapses:             True
 
 # Mutations
 mutationChanceModifyWeight:     0.5
