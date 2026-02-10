@@ -83,24 +83,24 @@ def main(config):
                     population = solver.getNewPopulation(population, fitnessScores)
                     generation += 1
 
-            # Visualize the winner
-            env = CleanLunarLander(gym.make("LunarLanderContinuous-v3", render_mode="human"))
-            for i in range(20):
-                state = env.reset()
-                bestOrganism.clearMemory()
-                fitnessScore = 0
-                while True:
-                    action = bestOrganism(state)
-                    state, reward, done = env.step(action)
-                    fitnessScore += reward
-                    if done: break
-                print(f"Episode {i+1} Reward: {fitnessScore:.2f}")
-
         except KeyboardInterrupt:
             pool.terminate()
             pool.join()
         finally:
             pool.close()
+
+        # Visualize the winner
+        env = CleanLunarLander(gym.make("LunarLanderContinuous-v3", render_mode="human"))
+        for i in range(20):
+            state = env.reset()
+            bestOrganism.clearMemory()
+            fitnessScore = 0
+            while True:
+                action = bestOrganism(state)
+                state, reward, done = env.step(action)
+                fitnessScore += reward
+                if done: break
+            print(f"Episode {i+1} Reward: {fitnessScore:.2f}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
