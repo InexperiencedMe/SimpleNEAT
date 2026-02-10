@@ -25,15 +25,11 @@ class CleanMario(gym.Wrapper):
         return gray.flatten() / 255.0
 
     def reset(self, seed=None):
-        res = self.env.reset(seed=seed)
-        if isinstance(res, tuple):
-            obs, info = res
-        else:
-            obs = res
+        state, info = self.env.reset(seed=seed)
             
         self.time_since_last_reward = 0
         self.current_total_reward = 0.0
-        return self.process_obs(obs)
+        return self.process_obs(state)
 
     def step(self, action):
         binary_action = [1 if x > 0 else 0 for x in action]
