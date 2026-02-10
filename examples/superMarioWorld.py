@@ -140,7 +140,7 @@ def main(config):
                 break
 
             clock.tick(60)
-        print(f"Best organism showcase reward: {fitnessScore:.2f}")
+        print(f"Showcase Episode Score: {fitnessScore:.2f}")
                 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

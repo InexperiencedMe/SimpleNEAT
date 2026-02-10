@@ -11,7 +11,7 @@ def initializeWorker(environmentMaker):
 
     signal.signal(signal.SIGINT, signal.SIG_IGN) # Ignore C-c in workers. Main process handles that.
 
-def evaluateOrganism(organism, envMaker, seeds):
+def evaluateOrganism(organism, seeds):
     global workerEnvironment
     rewardsSum = 0
     for seed in seeds:
@@ -26,10 +26,10 @@ def evaluateOrganism(organism, envMaker, seeds):
 
     return rewardsSum / len(seeds)
 
-def runEvolution(config, envMaker):
+def runEvolution(config, environmentMaker):
     rng = np.random.default_rng(config.seed)
     
-    temporaryEnvironment = envMaker()
+    temporaryEnvironment = environmentMaker()
     solver = NEAT(config, inputSize=temporaryEnvironment.observationSize, outputSize=temporaryEnvironment.actionSize, rng=rng)
     temporaryEnvironment.close()
 
@@ -38,7 +38,7 @@ def runEvolution(config, envMaker):
     generation      = 0
     maxFitnessEver  = -np.inf
     bestOrganism    = None
-    with multiprocessing.Pool(processes=multiprocessing.cpu_count(), initializer=initializeWorker) as pool:
+    with multiprocessing.Pool(processes=multiprocessing.cpu_count(), initializer=initializeWorker, initargs=(environmentMaker,)) as pool:
         try:
             while True:
                 seeds = rng.integers(0, 1000, size=(config.populationSize, config.evaluationEpisodes))

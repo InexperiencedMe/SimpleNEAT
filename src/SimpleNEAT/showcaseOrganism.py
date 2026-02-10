@@ -1,0 +1,31 @@
+import pygame as pg
+
+def showcaseOrganism(organism, environmentMaker, episodes=10, fps=60):
+    pg.init()
+    screen = None
+    clock = pg.time.Clock()
+    environment = environmentMaker(render_mode="rgb_array")
+    for i in range(episodes):
+        state = environment.reset()
+        organism.clearMemory()
+        done = False
+        score = 0
+        while not done:
+            frame = environment.render()
+            
+            if screen is None: screen = pg.display.set_mode((frame.shape[1], frame.shape[0]))
+
+            surface = pg.surfarray.make_surface(frame.swapaxes(0, 1))
+            screen.blit(surface, (0, 0))
+            pg.display.flip()
+
+            action = organism(state)
+            state, reward, done = environment.step(action)
+            score += reward
+            
+            for event in pg.event.get():
+                if event.type == pg.QUIT: return
+
+            clock.tick(fps)
+        print(f"Showcase Episode {i+1}. Score: {score:>8.2f}")
+    pg.quit()
