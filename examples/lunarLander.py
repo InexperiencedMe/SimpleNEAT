@@ -5,7 +5,7 @@ import copy
 import multiprocessing
 import signal
 from gymnasium.spaces.utils import flatdim
-from SimpleNEAT.NEAT import NEAT
+from SimpleNEAT.solver import NEAT
 from SimpleNEAT.utils import loadConfig
 
 class CleanLunarLander(gym.Wrapper):
@@ -84,7 +84,7 @@ def main(config):
                     generation += 1
 
         except KeyboardInterrupt:
-            print("Training terminated early by the user")
+            print("\nTraining terminated early by the user")
             pool.terminate()
             pool.join()
         finally:

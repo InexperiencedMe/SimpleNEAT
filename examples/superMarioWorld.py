@@ -7,7 +7,7 @@ import signal
 import pygame as pg
 import gymnasium as gym
 import itertools
-from SimpleNEAT.NEAT import NEAT
+from SimpleNEAT.solver import NEAT
 from SimpleNEAT.utils import loadConfig
 
 class CleanMario(gym.Wrapper):
