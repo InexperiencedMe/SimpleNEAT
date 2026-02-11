@@ -3,7 +3,7 @@ from SimpleNEAT.utils import ensurePath
 
 def showcaseOrganism(organism, environmentMaker, config):
     environment = environmentMaker(render_mode="rgb_array")
-    state = environment.reset()
+    _ = environment.reset()
     frame = environment.render()
     frameHeight, frameWidth, _ = frame.shape
     targetHeight, targetWidth = frameHeight * config.upscalingFactor, frameWidth * config.upscalingFactor
