@@ -1,22 +1,27 @@
 import pygame as pg
 
-def showcaseOrganism(organism, environmentMaker, episodes=10, fps=60):
+def showcaseOrganism(organism, environmentMaker, episodes=10, fps=60, upscalingFactor=4):
     pg.init()
     screen = None
     clock = pg.time.Clock()
     environment = environmentMaker(render_mode="rgb_array")
     for i in range(episodes):
         state = environment.reset()
+
+        frame = environment.render()
+        frameHeight, frameWidth, _ = frame.shape
+        targetHeight, targetWidth = frameHeight*upscalingFactor, frameWidth*upscalingFactor
+
         organism.clearMemory()
         done = False
         score = 0
         while not done:
-            frame = environment.render()
-            
-            if screen is None: screen = pg.display.set_mode((frame.shape[1], frame.shape[0]))
+            if screen is None: screen = pg.display.set_mode((targetWidth, targetHeight))
 
+            frame = environment.render()
             surface = pg.surfarray.make_surface(frame.swapaxes(0, 1))
-            screen.blit(surface, (0, 0))
+            upscaledSurface = pg.transform.scale(surface, (targetWidth, targetHeight))
+            screen.blit(upscaledSurface, (0, 0))
             pg.display.flip()
 
             action = organism(state)

@@ -23,5 +23,5 @@ def environmentMaker(render_mode=None):
 
 if __name__ == "__main__":
     config = loadConfig("lunarLander")
-    best = runEvolution(config, environmentMaker)
-    showcaseOrganism(best, environmentMaker)
+    bestOrganism = runEvolution(config, environmentMaker)
+    showcaseOrganism(bestOrganism, environmentMaker)
