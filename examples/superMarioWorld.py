@@ -47,4 +47,4 @@ def environmentMaker(render_mode=None):
 if __name__ == "__main__":
     config = loadConfig("superMarioWorld")
     bestOrganism = runEvolution(config, environmentMaker)
-    showcaseOrganism(bestOrganism, environmentMaker)
+    showcaseOrganism(bestOrganism, environmentMaker, config.showcaseOptions)

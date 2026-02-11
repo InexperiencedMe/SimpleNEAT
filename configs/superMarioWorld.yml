@@ -11,6 +11,14 @@ stagnationThreshold:            30
 evaluationEpisodes:             1
 initializeSynapses:             True
 
+# Showcase Options
+showcaseOptions:
+  episodes:                     1
+  fps:                          60
+  upscalingFactor:              4
+  filename:                     "superMarioWorld"
+  folder:                       "videos"
+
 # Mutations
 mutationChanceModifyWeight:     0.5
 mutationChanceNewSynapse:       0.1

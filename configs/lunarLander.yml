@@ -11,6 +11,14 @@ stagnationThreshold:            50
 evaluationEpisodes:             3
 initializeSynapses:             True
 
+# Showcase Options
+showcaseOptions:
+  episodes:                     20
+  fps:                          60
+  upscalingFactor:              4
+  filename:                     "lunarLander"
+  folder:                       "videos"
+
 # Mutations
 mutationChanceModifyWeight:     0.5
 mutationChanceNewSynapse:       0.1

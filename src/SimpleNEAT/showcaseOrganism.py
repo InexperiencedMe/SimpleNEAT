@@ -1,29 +1,27 @@
 import cv2 as cv
+from SimpleNEAT.utils import ensurePath
 
-def showcaseOrganism(organism, environmentMaker, episodes=10, fps=60, upscalingFactor=4):
+def showcaseOrganism(organism, environmentMaker, config):
     environment = environmentMaker(render_mode="rgb_array")
     state = environment.reset()
     frame = environment.render()
     frameHeight, frameWidth, _ = frame.shape
-    targetHeight, targetWidth = frameHeight * upscalingFactor, frameWidth * upscalingFactor
+    targetHeight, targetWidth = frameHeight * config.upscalingFactor, frameWidth * config.upscalingFactor
 
-    videoWriter = cv.VideoWriter("showcase.mp4", cv.VideoWriter_fourcc(*'mp4v'), fps, (targetWidth, targetHeight))
-    for i in range(episodes):
+    videoPath = ensurePath(config.folder, config.filename if config.filename.endswith(".mp4") else config.filename + ".mp4")
+    videoWriter = cv.VideoWriter(videoPath, cv.VideoWriter_fourcc(*'mp4v'), config.fps, (targetWidth, targetHeight))
+    for i in range(config.episodes):
         state = environment.reset()
         organism.clearMemory()
         done, score = False, 0
         while not done:
             frame = environment.render()
             
-            resizedFrame = cv.resize(frame, (targetWidth, targetHeight), interpolation=cv.INTER_LINEAR)
+            resizedFrame = cv.resize(frame, (targetWidth, targetHeight), interpolation=cv.INTER_NEAREST)
             videoWriter.write(cv.cvtColor(resizedFrame, cv.COLOR_RGB2BGR))
 
             action = organism(state)
-            step = environment.step(action)
-            state, reward, done = step[0], step[1], (step[2] or step[3] if len(step) > 4 else step[2])
+            state, reward, done = environment.step(action)
             score += reward
-            
-        print(f"Showcase Episode {i+1:2}. Score: {score:>8.2f}")
-    
-    if videoWriter: videoWriter.release()
-    environment.close()
+        print(f"Showcase Episode {i+1:<2}. Score: {score:>8.2f}")
+    videoWriter.release()
