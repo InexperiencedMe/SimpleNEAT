@@ -1,36 +1,29 @@
-import pygame as pg
+import cv2 as cv
 
 def showcaseOrganism(organism, environmentMaker, episodes=10, fps=60, upscalingFactor=4):
-    pg.init()
-    screen = None
-    clock = pg.time.Clock()
     environment = environmentMaker(render_mode="rgb_array")
+    state = environment.reset()
+    frame = environment.render()
+    frameHeight, frameWidth, _ = frame.shape
+    targetHeight, targetWidth = frameHeight * upscalingFactor, frameWidth * upscalingFactor
+
+    videoWriter = cv.VideoWriter("showcase.mp4", cv.VideoWriter_fourcc(*'mp4v'), fps, (targetWidth, targetHeight))
     for i in range(episodes):
         state = environment.reset()
-
-        frame = environment.render()
-        frameHeight, frameWidth, _ = frame.shape
-        targetHeight, targetWidth = frameHeight*upscalingFactor, frameWidth*upscalingFactor
-
         organism.clearMemory()
-        done = False
-        score = 0
+        done, score = False, 0
         while not done:
-            if screen is None: screen = pg.display.set_mode((targetWidth, targetHeight))
-
             frame = environment.render()
-            surface = pg.surfarray.make_surface(frame.swapaxes(0, 1))
-            upscaledSurface = pg.transform.scale(surface, (targetWidth, targetHeight))
-            screen.blit(upscaledSurface, (0, 0))
-            pg.display.flip()
+            
+            resizedFrame = cv.resize(frame, (targetWidth, targetHeight), interpolation=cv.INTER_LINEAR)
+            videoWriter.write(cv.cvtColor(resizedFrame, cv.COLOR_RGB2BGR))
 
             action = organism(state)
-            state, reward, done = environment.step(action)
+            step = environment.step(action)
+            state, reward, done = step[0], step[1], (step[2] or step[3] if len(step) > 4 else step[2])
             score += reward
             
-            for event in pg.event.get():
-                if event.type == pg.QUIT: return
-
-            clock.tick(fps)
-        print(f"Showcase Episode {i+1}. Score: {score:>8.2f}")
-    pg.quit()
+        print(f"Showcase Episode {i+1:2}. Score: {score:>8.2f}")
+    
+    if videoWriter: videoWriter.release()
+    environment.close()
