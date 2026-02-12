@@ -1,4 +1,5 @@
 import imageio
+import numpy as np
 from SimpleNEAT.utils import ensurePath
 
 def showcaseOrganism(organism, environmentMaker, config):
@@ -16,5 +17,5 @@ def showcaseOrganism(organism, environmentMaker, config):
             score += reward
 
             frames.append(environment.render().repeat(config.upscalingFactor, axis=0).repeat(config.upscalingFactor, axis=1))
-        print(f"Showcase Episode {i+1:<2}. Score: {score:>8.2f}")
+        print(f"Showcase Episode {i+1:>2}. Score: {score:>8.2f}")
     imageio.mimwrite(videoPath, frames, fps=config.fps, macro_block_size=1)

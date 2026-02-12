@@ -20,7 +20,7 @@ showcaseOptions:
   folder:                       "videos"
 
 # Mutations
-mutationChanceModifyWeight:     0.5
+mutationChanceModifyWeight:     0.8
 mutationChanceNewSynapse:       0.1
 mutationChanceNewNeuron:        0.05
 resetWeightChance:              0.1
