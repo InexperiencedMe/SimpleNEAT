@@ -26,6 +26,8 @@ class Organism:
         self.memory.clear()
 
     def __call__(self, inputs):
+        if inputs.ndim > 1: inputs = inputs.ravel()
+        
         for i, input in enumerate(inputs):
             self.memory[i] = input
         self.memory[self.biasNode] = 1.0
