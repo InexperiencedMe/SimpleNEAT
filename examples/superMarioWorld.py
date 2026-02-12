@@ -8,9 +8,8 @@ from SimpleNEAT.showcaseOrganism import showcaseOrganism
 
 class CleanMario(gym.Wrapper):
     def __init__(self, env):
-        self.env = GrayscaleObservation(ResizeObservation(env, (16, 16)))
-        
-        self.observationSize = 16 * 16
+        self.env = GrayscaleObservation(env)
+        self.observationSize = 16 * 14
         self.actionSize = 12
         
         self.max_Xposition      = 0
@@ -24,10 +23,10 @@ class CleanMario(gym.Wrapper):
         return Xposition, isDead
 
     def processObservation(self, obs):
-        return obs.flatten() / 255.0
+        return obs[::16, ::16].flatten() / 255.0
 
-    def reset(self, seed=None, **kwargs):
-        obs, info = self.env.reset(seed=seed, **kwargs)
+    def reset(self, seed=None):
+        obs, info = self.env.reset(seed=seed)
         
         Xposition, _ = self.getRAMvalues()
         self.max_Xposition = Xposition
@@ -47,13 +46,9 @@ class CleanMario(gym.Wrapper):
             reward += float(progress)
         else:
             self.stagnationCounter += 1
+        reward += -1 # Constant penalty
 
-        reward += -1 # Constant penalty anyway
-
-        if self.stagnationCounter >= 100:
-            truncated = True
-
-        return self.processObservation(obs), reward, terminated or truncated or isDead
+        return self.processObservation(obs), reward, terminated or truncated or isDead or self.stagnationCounter >= 100
     
 def environmentMaker(render_mode=None):
     return CleanMario(retro.make("SuperMarioWorld-Snes-v0", state="DonutPlains1", render_mode=render_mode))

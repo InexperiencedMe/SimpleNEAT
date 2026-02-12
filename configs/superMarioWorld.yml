@@ -9,7 +9,7 @@ survivalThreshold:              0.2
 elitism:                        2
 stagnationThreshold:            30
 evaluationEpisodes:             1
-initializeSynapses:             True
+initializeSynapses:             False
 
 # Showcase Options
 showcaseOptions:
@@ -21,8 +21,8 @@ showcaseOptions:
 
 # Mutations
 mutationChanceModifyWeight:     0.8
-mutationChanceNewSynapse:       0.1
-mutationChanceNewNeuron:        0.05
+mutationChanceNewSynapse:       0.2
+mutationChanceNewNeuron:        0.1
 resetWeightChance:              0.1
 weightMutationScale:            0.01
 
