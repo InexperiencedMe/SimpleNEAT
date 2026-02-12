@@ -13,7 +13,7 @@ initializeSynapses:             True
 
 # Showcase Options
 showcaseOptions:
-  episodes:                     20
+  episodes:                     10
   fps:                          60
   upscalingFactor:              4
   filename:                     "lunarLander"

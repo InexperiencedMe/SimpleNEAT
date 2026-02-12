@@ -1,27 +1,20 @@
-import cv2 as cv
+import imageio
 from SimpleNEAT.utils import ensurePath
 
 def showcaseOrganism(organism, environmentMaker, config):
+    print(f"Starting recording the showcase video")
     environment = environmentMaker(render_mode="rgb_array")
-    _ = environment.reset()
-    frame = environment.render()
-    frameHeight, frameWidth, _ = frame.shape
-    targetHeight, targetWidth = frameHeight * config.upscalingFactor, frameWidth * config.upscalingFactor
-
     videoPath = ensurePath(config.folder, config.filename if config.filename.endswith(".mp4") else config.filename + ".mp4")
-    videoWriter = cv.VideoWriter(videoPath, cv.VideoWriter_fourcc(*'mp4v'), config.fps, (targetWidth, targetHeight))
+    frames = []
     for i in range(config.episodes):
         state = environment.reset()
         organism.clearMemory()
         done, score = False, 0
         while not done:
-            frame = environment.render()
-            
-            resizedFrame = cv.resize(frame, (targetWidth, targetHeight), interpolation=cv.INTER_NEAREST)
-            videoWriter.write(cv.cvtColor(resizedFrame, cv.COLOR_RGB2BGR))
-
             action = organism(state)
             state, reward, done = environment.step(action)
             score += reward
+
+            frames.append(environment.render().repeat(config.upscalingFactor, axis=0).repeat(config.upscalingFactor, axis=1))
         print(f"Showcase Episode {i+1:<2}. Score: {score:>8.2f}")
-    videoWriter.release()
+    imageio.mimwrite(videoPath, frames, fps=config.fps, macro_block_size=1)
