@@ -1,6 +1,6 @@
 import imageio
 import numpy as np
-from SimpleNEAT.utils import ensurePath
+from SimpleNEAT.utils import ensurePath, embedForegroundOnFrame
 
 def showcaseOrganism(organism, environmentMaker, config):
     print(f"Starting recording the showcase video")
@@ -22,14 +22,6 @@ def showcaseOrganism(organism, environmentMaker, config):
             if observationView.ndim == 2: observationView = np.stack([observationView] * 3, axis=-1)
             if observationView.ndim == 3: observationView = observationView.repeat(config.upscalingFactor*5, axis=0).repeat(config.upscalingFactor*5, axis=1)
 
-            observationViewPositionY, observationViewPositionX = int(0.2*renderedFrame.shape[0]), int(0.1*renderedFrame.shape[1])
-
-            h, w, _ = observationView.shape
-            foreground = observationView[:h, :w].astype(float)
-            background = renderedFrame[observationViewPositionY:observationViewPositionY+h, observationViewPositionX:observationViewPositionX+w].astype(float)
-            blended = (background * (1 - 0.9)) + (foreground * 0.9)
-            renderedFrame[observationViewPositionY:observationViewPositionY+h, observationViewPositionX:observationViewPositionX+w] = blended.astype(np.uint8)
-
-            frames.append(renderedFrame)
+            frames.append(embedForegroundOnFrame(observationView, renderedFrame, 0.2, 0.1, 0.9))
         print(f"Showcase Episode {i+1:>2}. Score: {score:>8.2f}")
     imageio.mimwrite(videoPath, frames, fps=config.fps, macro_block_size=1)

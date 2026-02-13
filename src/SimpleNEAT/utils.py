@@ -1,6 +1,7 @@
 import os
 import yaml
 import attridict
+import numpy as np
 
 def ensurePath(*pathElements):
     path = os.path.join(*pathElements)
@@ -20,3 +21,16 @@ def loadConfig(filename, folder="configs"):
         config = yaml.load(configFile, Loader=yaml.FullLoader)
     
     return attridict(config)
+
+def embedForegroundOnFrame(foreground, frame, posPercentY, posPercentX, alpha):
+    offsetY, offsetX = int(posPercentY*frame.shape[0]), int(posPercentX*frame.shape[1])
+
+    height, width, _ = foreground.shape
+    background = frame[offsetY:offsetY + height, offsetX:offsetX + width]
+    blended = (background * (1 - alpha) + foreground * alpha).astype(np.uint8)
+    frame[offsetY:offsetY + height, offsetX:offsetX + width] = blended
+    return frame
+
+
+
+
