@@ -6,7 +6,6 @@ def createVisualization(observation, upscalingFactor, coloredObservation=True, p
     if coloredObservation:
         positiveMask = np.clip(observation, 0, 1)
         negativeMask = np.clip(-observation, 0, 1)
-
         channels = [(positiveMask * positiveColor[i]) + (negativeMask * negativeColor[i]) for i in range(3)]
         observation = np.stack(channels, axis=-1)
     else:
