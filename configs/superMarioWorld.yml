@@ -15,7 +15,7 @@ initializeSynapses:             False
 showcaseOptions:
   episodes:                     1
   fps:                          60
-  upscalingFactor:              4
+  upscalingFactor:              8
   filename:                     "superMarioWorld"
   folder:                       "videos"
 
