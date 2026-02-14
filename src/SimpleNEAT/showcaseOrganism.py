@@ -17,9 +17,10 @@ def showcaseOrganism(organism, environmentMaker, config):
             state, reward, done = environment.step(action)
             score += reward
 
-            renderedFrame = environment.render().repeat(config.upscalingFactor, axis=0).repeat(config.upscalingFactor, axis=1)
-            visualization = createVisualization(state, upscalingFactor=config.upscalingFactor*5)
+            environmentFrame    = environment.render().repeat(config.upscalingFactor, axis=0).repeat(config.upscalingFactor, axis=1)
+            visualization       = createVisualization(state, upscalingFactor=config.upscalingFactor*5)
+            finalFrame          = embedForegroundOnFrame(visualization, environmentFrame, 0.2, 0.1, 0.9)
 
-            frames.append(embedForegroundOnFrame(visualization, renderedFrame, 0.2, 0.1, 0.9))
+            frames.append(finalFrame)
         print(f"Showcase Episode {i+1:>2}. Score: {score:>8.2f}")
     imageio.mimwrite(videoPath, frames, fps=config.fps, macro_block_size=1)

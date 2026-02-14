@@ -1,7 +1,8 @@
 import numpy as np
 
 def createVisualization(observation, upscalingFactor, coloredObservation=True, positiveColor=(0, 255, 255), negativeColor=(255, 0, 0)):
-    observation = np.clip(np.atleast_2d(observation), -1, 1)
+    if observation.ndim == 1: observation = np.atleast_2d(observation).T
+    observation = np.clip(observation, -1, 1)
 
     if coloredObservation:
         positiveMask = np.clip(observation, 0, 1)
