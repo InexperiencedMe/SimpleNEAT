@@ -21,7 +21,7 @@ def createVisualization(observation, canvasStartPoint, canvasEndPoint, gridColor
     else:
         observation01 = ((observation + 1) / 2.0)
         observationRGBA01 = np.stack([observation01, observation01, observation01, np.ones_like(observation01)], axis=-1)
-    observationRGBA = (observationRGBA01*255).astype(np.uint8)
+    observationRGBA = observationRGBA01
 
     canvasHeightRequested = abs(canvasEndPoint[1] - canvasStartPoint[1])
     cellSize = (canvasHeightRequested - gridThickness * (rows + 1)) // rows
@@ -36,7 +36,8 @@ def createVisualization(observation, canvasStartPoint, canvasEndPoint, gridColor
         for column in range(cols):
             x_left = gridThickness + column * (cellSize + gridThickness)
             observationGrid[y_top:y_top + cellSize, x_left:x_left + cellSize] = observationRGBA[row, column]
-    return observationGrid
+            
+    return (observationGrid*255).astype(np.uint8)
 
 def embedForegroundOnFrame(foreground, frame, position, globalAlpha=1.0):
     """
