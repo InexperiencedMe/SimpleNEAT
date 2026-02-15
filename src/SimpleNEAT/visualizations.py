@@ -2,37 +2,31 @@ import numpy as np
 import cv2 as cv
 
 def createVisualization(observation, canvasStartPoint, canvasEndPoint, paddingColor=(40, 40, 40, 255)):
-    """
-    Creates an RGBA visualization block sized exactly to fit the squares.
-    """
-    # --- Config ---
+    # TODO: Put this in config
     coloredObservation = True
-    positiveColor = (0, 255, 255, 255) # Cyan
-    negativeColor = (255, 0, 0, 255)   # Red
+    positiveColor = (0, 255, 255, 255)
+    negativeColor = (255, 0, 0, 255)
     padding = 5
 
-    # 1. Standardize observation
-    if observation.ndim == 1: 
-        observation = observation[:, np.newaxis]
-    
+    if observation.ndim == 1: observation = observation[... , np.newaxis, np.newaxis]
+    if observation.ndim == 2: observation = observation[... , np.newaxis]
     observation = np.clip(observation, -1, 1)
-    rows, cols = observation.shape
+    rows, cols, _ = observation.shape
     
-    # 2. Map values to RGBA
     if coloredObservation:
-        pos_mask = np.clip(observation, 0, 1)[... , np.newaxis]
-        neg_mask = np.clip(-observation, 0, 1)[... , np.newaxis]
-        obs_rgb = (pos_mask * positiveColor[:3]) + (neg_mask * negativeColor[:3])
-        alpha_channel = np.ones_like(observation)[..., np.newaxis] * 255
-        obs_pixels = np.concatenate([obs_rgb, alpha_channel], axis=-1).astype(np.uint8)
+        positiveMask = np.clip( observation, 0, 1)
+        maskNegative = np.clip(-observation, 0, 1)
+        observationRGB = (positiveMask * positiveColor[:3]) + (maskNegative * negativeColor[:3])
+        observationRGBA01 = np.concatenate((observationRGB, np.ones_like(observationRGB[:, :, 0:1])), axis=-1)
     else:
-        obs_norm = ((observation + 1) / 2.0 * 255).astype(np.uint8)
-        obs_pixels = np.stack([obs_norm, obs_norm, obs_norm, np.full_like(obs_norm, 255)], axis=-1)
+        observation01 = ((observation + 1) / 2.0)
+        observationRGBA01 = np.stack([observation01, observation01, observation01, np.ones_like(observation01)], axis=-1)
+    observationRGBA = (observationRGBA01*255).astype(np.int8)
 
     # 3. Calculate Height constraints
     canvasHeightRequested = abs(canvasEndPoint[1] - canvasStartPoint[1])
 
-    # 4. Calculate cellSize (Integer division leaves a remainder)
+    # 4. Calculate cellSize (Integer division leaves a remainder)observationRGBA
     cellSize = (canvasHeightRequested - (padding * (rows + 1))) // rows
     if cellSize <= 0: cellSize = 1
 
@@ -51,7 +45,7 @@ def createVisualization(observation, canvasStartPoint, canvasEndPoint, paddingCo
             x_left = padding + c * (cellSize + padding)
             # Paste the colored square
             obs_block[y_top : y_top + cellSize, 
-                      x_left : x_left + cellSize] = obs_pixels[r, c]
+                      x_left : x_left + cellSize] = observationRGBA[r, c]
 
     return obs_block
 
