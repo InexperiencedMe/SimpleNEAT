@@ -36,38 +36,18 @@ def createVisualization(observation, canvasStartPoint, canvasEndPoint, gridColor
         for column in range(cols):
             x_left = gridThickness + column * (cellSize + gridThickness)
             observationGrid[y_top:y_top + cellSize, x_left:x_left + cellSize] = observationRGBA[row, column]
-            
+
     return (observationGrid*255).astype(np.uint8)
 
 def embedForegroundOnFrame(foreground, frame, position, globalAlpha=1.0):
-    """
-    Blends an RGBA foreground image onto an RGB frame using per-pixel alpha.
-    """
     offsetX, offsetY = position
-    fh, fw = foreground.shape[:2]
+    foregroundHeight, foregroundWidth = foreground.shape[:2]
 
-    # Ensure we don't go out of bounds of the frame
-    if offsetY + fh > frame.shape[0] or offsetX + fw > frame.shape[1]:
-        # Optional: Trim foreground if it exceeds frame boundaries
-        fh = min(fh, frame.shape[0] - offsetY)
-        fw = min(fw, frame.shape[1] - offsetX)
-        foreground = foreground[:fh, :fw]
+    backgroundToBeBlended = frame[offsetY:offsetY + foregroundHeight, offsetX:offsetX + foregroundWidth]
+    pixelAlpha = foreground[:, :, 3:4] * globalAlpha
 
-    # 1. Get the background slice
-    background = frame[offsetY:offsetY + fh, offsetX:offsetX + fw]
-
-    # 2. Extract Alpha channel and combine with globalAlpha
-    # Foreground is (H, W, 4), Channel 3 is Alpha
-    pixelAlpha = (foreground[:, :, 3] / 255.0) * globalAlpha
-    pixelAlpha = pixelAlpha[..., np.newaxis] # Expand to (H, W, 1) for broadcasting
-
-    # 3. Blending math: result = bg * (1-a) + fg * a
-    # Convert to float for calculation, then back to uint8
-    blended = (background.astype(float) * (1.0 - pixelAlpha) + 
-               foreground[:, :, :3].astype(float) * pixelAlpha).astype(np.uint8)
-
-    # 4. Paste back
-    frame[offsetY:offsetY + fh, offsetX:offsetX + fw] = blended
+    blended = (backgroundToBeBlended.astype(np.float32) * (1.0 - pixelAlpha) + foreground[:, :, :3].astype(np.float32) * pixelAlpha).astype(np.uint8)
+    frame[offsetY:offsetY + foregroundHeight, offsetX:offsetX + foregroundWidth] = blended
     return frame
 
 def percentCoordsToIdx(point: tuple[float, float], canvas: np.ndarray) -> tuple[float, float]:
