@@ -1,12 +1,12 @@
 import numpy as np
 import cv2 as cv
 
-def createVisualization(observation, canvasStartPoint, canvasEndPoint, paddingColor=(40, 40, 40, 255)):
+def createVisualization(observation, canvasStartPoint, canvasEndPoint, gridColor=(0.2, 0.2, 0.2, 1.0)):
     # TODO: Put this in config
     coloredObservation = True
     positiveColor = (0.0, 1.0, 1.0, 1.0)
     negativeColor = (1.0, 0.0, 0.0, 1.0)
-    padding = 5
+    gridThickness = 5
 
     if observation.ndim == 1: observation = observation[... , np.newaxis, np.newaxis]
     if observation.ndim == 2: observation = observation[... , np.newaxis]
@@ -23,31 +23,20 @@ def createVisualization(observation, canvasStartPoint, canvasEndPoint, paddingCo
         observationRGBA01 = np.stack([observation01, observation01, observation01, np.ones_like(observation01)], axis=-1)
     observationRGBA = (observationRGBA01*255).astype(np.uint8)
 
-    # 3. Calculate Height constraints
     canvasHeightRequested = abs(canvasEndPoint[1] - canvasStartPoint[1])
+    cellSize = (canvasHeightRequested - gridThickness * (rows + 1)) // rows
 
-    # 4. Calculate cellSize (Integer division leaves a remainder)observationRGBA
-    cellSize = (canvasHeightRequested - (padding * (rows + 1))) // rows
-    if cellSize <= 0: cellSize = 1
-
-    # 5. NEW: Calculate the EXACT dimensions needed for the block
-    # This prevents the "stripe" at the bottom/right from integer remainders
-    actualHeight = (rows * cellSize) + ((rows + 1) * padding)
-    actualWidth  = (cols * cellSize) + ((cols + 1) * padding)
+    gridHeight = (rows * cellSize) + ((rows + 1) * gridThickness)
+    gridWidth  = (cols * cellSize) + ((cols + 1) * gridThickness)
     
-    # 6. Create the sub-canvas at the EXACT size
-    obs_block = np.full((actualHeight, actualWidth, 4), paddingColor, dtype=np.uint8)
+    observationGrid = np.full((gridHeight, gridWidth, 4), gridColor)
 
-    # 7. Fill the block
-    for r in range(rows):
-        y_top = padding + r * (cellSize + padding)
-        for c in range(cols):
-            x_left = padding + c * (cellSize + padding)
-            # Paste the colored square
-            obs_block[y_top : y_top + cellSize, 
-                      x_left : x_left + cellSize] = observationRGBA[r, c]
-
-    return obs_block
+    for row in range(rows):
+        y_top = gridThickness + row * (cellSize + gridThickness)
+        for column in range(cols):
+            x_left = gridThickness + column * (cellSize + gridThickness)
+            observationGrid[y_top:y_top + cellSize, x_left:x_left + cellSize] = observationRGBA[row, column]
+    return observationGrid
 
 def embedForegroundOnFrame(foreground, frame, position, globalAlpha=1.0):
     """
