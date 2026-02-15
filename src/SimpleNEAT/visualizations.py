@@ -4,8 +4,8 @@ import cv2 as cv
 def createVisualization(observation, canvasStartPoint, canvasEndPoint, paddingColor=(40, 40, 40, 255)):
     # TODO: Put this in config
     coloredObservation = True
-    positiveColor = (0, 255, 255, 255)
-    negativeColor = (255, 0, 0, 255)
+    positiveColor = (0.0, 1.0, 1.0, 1.0)
+    negativeColor = (1.0, 0.0, 0.0, 1.0)
     padding = 5
 
     if observation.ndim == 1: observation = observation[... , np.newaxis, np.newaxis]
@@ -21,7 +21,7 @@ def createVisualization(observation, canvasStartPoint, canvasEndPoint, paddingCo
     else:
         observation01 = ((observation + 1) / 2.0)
         observationRGBA01 = np.stack([observation01, observation01, observation01, np.ones_like(observation01)], axis=-1)
-    observationRGBA = (observationRGBA01*255).astype(np.int8)
+    observationRGBA = (observationRGBA01*255).astype(np.uint8)
 
     # 3. Calculate Height constraints
     canvasHeightRequested = abs(canvasEndPoint[1] - canvasStartPoint[1])
