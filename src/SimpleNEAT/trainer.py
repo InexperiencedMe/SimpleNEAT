@@ -15,13 +15,13 @@ def evaluateOrganism(organism, seeds):
     global workerEnvironment
     rewardsSum = 0
     for seed in seeds:
-        state = workerEnvironment.reset(seed=int(seed))
+        observation = workerEnvironment.reset(seed=int(seed))
         organism.clearMemory()
 
         done = False
         while not done:
-            action = organism(state)
-            state, reward, done = workerEnvironment.step(action)
+            action = organism(observation)
+            observation, reward, done = workerEnvironment.step(action)
             rewardsSum += reward
 
     return rewardsSum / len(seeds)
