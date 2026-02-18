@@ -1,21 +1,60 @@
 import numpy as np
 import cv2 as cv
 
-def createVisualization(canvasHeight, canvasWidth, organism, observation, action):
-    canvas = np.ones((canvasHeight, canvasWidth, 4))
+def preprocessValuesForGridVisualization(values):
+    if values.ndim == 1: values = values[... , np.newaxis, np.newaxis]
+    if values.ndim == 2: values = values[... , np.newaxis]
+    values = np.clip(values, -1, 1)
+    rows, cols, _ = values.shape
 
-    # NOTE: I will have to calculate cell size externally somehow...
+    return values, rows, cols
+
+def createVisualizationGrid(values, rows, cols, cellSize, colored, positiveColor, negativeColor, gridColor, gridThickness): # TODO: after colored should be in config.visualization.grid...
+    if colored:
+        positiveMask = np.clip( values, 0, 1)
+        maskNegative = np.clip(-values, 0, 1)
+        observationRGB = (positiveMask * positiveColor[:3]) + (maskNegative * negativeColor[:3])
+        observationRGBA01 = np.concatenate((observationRGB, np.ones_like(observationRGB[:, :, 0:1])), axis=-1)
+    else:
+        observation01 = ((values + 1) / 2.0)
+        observationRGBA01 = np.stack([observation01, observation01, observation01, np.ones_like(observation01)], axis=-1)
+    observationRGBA = observationRGBA01
+
+    observationVisualizationHeight = (rows * cellSize) + ((rows + 1) * gridThickness)
+    observationVisualizationWidth  = (cols * cellSize) + ((cols + 1) * gridThickness)
+    
+    observationVisualization = np.full((observationVisualizationHeight, observationVisualizationWidth, 4), gridColor)
+
+    grid = []
+    for row in range(rows):
+        y_top = gridThickness + row * (cellSize + gridThickness)
+        for column in range(cols):
+            x_left = gridThickness + column * (cellSize + gridThickness)
+            observationVisualization[y_top:y_top + cellSize, x_left:x_left + cellSize] = observationRGBA[row, column]
+            grid.append((y_top, x_left))
+
+    return (observationVisualization*255).astype(np.uint8), grid
+
+def createVisualization(canvasHeight, canvasWidth, organism, observation, action):
+    canvas = np.zeros((canvasHeight, canvasWidth, 4), dtype=np.uint8)
+
+    coloredObservation = True
+    positiveColor = (0.0, 1.0, 1.0, 1.0)
+    negativeColor = (1.0, 0.0, 0.0, 1.0)
+    gridColor     = (0.2, 0.2, 0.2, 1.0)
+    gridThickness = 5
+
     cleanObservation, obsRows, obsCols  = preprocessValuesForGridVisualization(observation)
     cleanAction, actionRows, actionCols = preprocessValuesForGridVisualization(action)
-    cellSize = (canvasHeight - config.visualization.gridThickness * (obsRows + 1)) // obsRows
+    cellSize = (canvasHeight - gridThickness * (obsRows + 1)) // obsRows
 
-    obsViz, obsGrid = createObservationVisualization(cleanObservation, obsRows, obsCols, cellSize)
+    obsViz, obsGrid = createVisualizationGrid(cleanObservation, obsRows, obsCols, cellSize, coloredObservation, positiveColor, negativeColor, gridColor, gridThickness)
     obsVizHeight, obsVizWidth = obsViz.shape[:2]
     obsVizOffsetX = 0
     obsVizOffsetY = (canvasHeight - obsVizHeight) // 2
     canvas[obsVizOffsetY:obsVizOffsetY+obsVizHeight, obsVizOffsetX:obsVizOffsetX+obsVizWidth] = obsViz
 
-    outputViz, outputGrid = createOutputVisualization(cleanAction, actionRows, actionCols, cellSize)
+    outputViz, outputGrid = createVisualizationGrid(cleanAction, actionRows, actionCols, cellSize, coloredObservation, positiveColor, negativeColor, gridColor, gridThickness)
     outputVizHeight, outputVizWidth = outputViz.shape[:2]
     outputVizOffsetX = canvasWidth - outputVizWidth
     outputVizOffsetY = (canvasHeight - outputVizHeight) // 2
@@ -24,47 +63,6 @@ def createVisualization(canvasHeight, canvasWidth, organism, observation, action
     # canvas = visualizeSynapses(observation, organism, canvas, obsGrid, outputGrid)
 
     return canvas
-    
-
-# FIXME: This will be a subfunction to the main visualizer that puts 3 elements together: inputs, synapses, outputs
-# def createVisualizationGrid(observation, availableHeight):
-#     # TODO: Put this in config
-#     coloredObservation = True
-#     positiveColor = (0.0, 1.0, 1.0, 1.0)
-#     negativeColor = (1.0, 0.0, 0.0, 1.0)
-#     gridColor     = (0.2, 0.2, 0.2, 1.0)
-#     gridThickness = 5
-
-#     if observation.ndim == 1: observation = observation[... , np.newaxis, np.newaxis]
-#     if observation.ndim == 2: observation = observation[... , np.newaxis]
-#     observation = np.clip(observation, -1, 1)
-#     rows, cols, _ = observation.shape
-    
-#     if coloredObservation:
-#         positiveMask = np.clip( observation, 0, 1)
-#         maskNegative = np.clip(-observation, 0, 1)
-#         observationRGB = (positiveMask * positiveColor[:3]) + (maskNegative * negativeColor[:3])
-#         observationRGBA01 = np.concatenate((observationRGB, np.ones_like(observationRGB[:, :, 0:1])), axis=-1)
-#     else:
-#         observation01 = ((observation + 1) / 2.0)
-#         observationRGBA01 = np.stack([observation01, observation01, observation01, np.ones_like(observation01)], axis=-1)
-#     observationRGBA = observationRGBA01
-
-#     canvasHeight = abs(canvasEndPoint[1] - canvasStartPoint[1])
-#     cellSize = (canvasHeight - gridThickness * (rows + 1)) // rows
-
-#     observationVisualizationHeight = (rows * cellSize) + ((rows + 1) * gridThickness)
-#     observationVisualizationWidth  = (cols * cellSize) + ((cols + 1) * gridThickness)
-    
-#     observationVisualization = np.full((observationVisualizationHeight, observationVisualizationWidth, 4), gridColor)
-
-#     for row in range(rows):
-#         y_top = gridThickness + row * (cellSize + gridThickness)
-#         for column in range(cols):
-#             x_left = gridThickness + column * (cellSize + gridThickness)
-#             observationVisualization[y_top:y_top + cellSize, x_left:x_left + cellSize] = observationRGBA[row, column]
-
-#     return (observationVisualization*255).astype(np.uint8)
 
 def embedForegroundOnFrame(foreground, frame, position, globalAlpha=1.0):
     offsetX, offsetY = position
@@ -85,8 +83,8 @@ def percentCornersToHeightAndWidth(canvas: np.ndarray, topLeft: tuple[float, flo
     topLeftX, topLeftY          = percentCoordsToIdx(canvas, topLeft)
     bottomRightX, bottomRightY  = percentCoordsToIdx(canvas, bottomRight)
 
-    canvasHeight    = abs(topLeftX - bottomRightX)
-    canvasWidth     = abs(topLeftY - bottomRightY)
+    canvasHeight    = abs(topLeftY - bottomRightY)
+    canvasWidth     = abs(topLeftX - bottomRightX)
 
     return canvasHeight, canvasWidth
     

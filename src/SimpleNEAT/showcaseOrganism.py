@@ -18,7 +18,7 @@ def showcaseOrganism(organism, environmentMaker, config):
             environmentFrame    = environment.render().repeat(config.upscalingFactor, axis=0).repeat(config.upscalingFactor, axis=1)
             visualizationHeight, visualizationWidth = percentCornersToHeightAndWidth(environmentFrame, (0.1, 0.2), (0.9, 0.6))
             visualization       = createVisualization(visualizationHeight, visualizationWidth, organism, observation,  action)
-            finalFrame          = embedForegroundOnFrame(visualization, environmentFrame, percentCoordsToIdx((0.1, 0.2), environmentFrame), 1.0)
+            finalFrame          = embedForegroundOnFrame(visualization, environmentFrame, percentCoordsToIdx(environmentFrame, (0.1, 0.2)), 1.0)
             frames.append(finalFrame)
 
             observation, reward, done = environment.step(action)
