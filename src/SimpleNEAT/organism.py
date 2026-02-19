@@ -3,7 +3,6 @@ import copy
 from dataclasses import dataclass
 from collections import defaultdict
 
-# NOTE: We can potentially include bias in the synapse. Having additional bias neuron is ugly
 @dataclass(slots=True)
 class Synapse:
     source:      int
@@ -57,7 +56,7 @@ class Organism:
                     synapse.weight += self.rng.normal(0, self.config.weightMutationScale)
 
         if self.rng.random() < self.config.mutationChanceNewSynapse:
-            validSources        = [n for n in self.neurons if n <= self.inputSizeWithBias or n >= self.inputSizeWithBias + self.outputSize]
+            validSources        = list(self.neurons)
             validDestinations   = [n for n in self.neurons if n >= self.inputSizeWithBias]
             existingLinks       = set((synapse.source, synapse.destination) for synapse in self.synapses.values())
             for _ in range(10): # Retrying is faster than listing possible new links

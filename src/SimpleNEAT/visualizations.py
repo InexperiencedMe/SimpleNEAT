@@ -16,6 +16,7 @@ def createVisualizationGrid(values, rows, cols, cellSize, config):
         observationRGB = (positiveMask * config.positiveColor[:3]) + (maskNegative * config.negativeColor[:3])
         observationRGBA01 = np.concatenate((observationRGB, np.ones_like(observationRGB[:, :, 0:1])), axis=-1)
     else:
+        # FIXME: Not good. If observation ranges from 0 to 1, we make the range 0.5 - 1.0 which is terrible. For outputs fine, for inputs nahh
         observation01 = ((values + 1) / 2.0)
         observationRGBA01 = np.stack([observation01, observation01, observation01, np.ones_like(observation01)], axis=-1)
     observationRGBA = observationRGBA01
@@ -38,20 +39,16 @@ def createVisualizationGrid(values, rows, cols, cellSize, config):
 
 def translateNeuronToCoords(neuron, organism, obsCoords, outputsCoords, cellSize):
     if neuron < organism.inputSize:
-        print(f"neuron is input, so returning obs coord")
         return obsCoords[neuron]
     
     if neuron == organism.biasNeuron:
-        print(f"neuron is bias")
         lastObsCellY, lastObsCellX = obsCoords[-1]
         return lastObsCellY, lastObsCellX + cellSize*4
     
     if neuron < organism.inputSizeWithBias + organism.outputSize:
-        print(f"neuron is output")
         return outputsCoords[neuron - organism.inputSizeWithBias]
     
     # Temporary, all hidden neurons will be in this spot
-    print(f"neuron is hidden")
     lastObsCellY, lastObsCellX = obsCoords[-1]
     return lastObsCellY, lastObsCellX + cellSize*10
 
@@ -60,9 +57,7 @@ def visualizeSynapses(canvas, organism, obsCoords, outputsCoords, cellSize, conf
 
     for synapse in organism.synapses.values():
 
-        print(f"\nsource neuron: {synapse.source}")
         startpointY, startpointX    = translateNeuronToCoords(synapse.source,       organism, obsCoords, outputsCoords, cellSize)
-        print(f"destination neuron: {synapse.destination}")
         endpointY, endpointX        = translateNeuronToCoords(synapse.destination,  organism, obsCoords, outputsCoords, cellSize)
         cv.line(canvas, (startpointX, startpointY), (endpointX, endpointY), (1.0, 0.0, 1.0, 1.0), int(np.abs(synapse.weight*2)+2), cv.LINE_AA) # FIXME: AA doesnt work on floats, has to be uint8 :|
 
