@@ -16,7 +16,7 @@ class Organism:
         self.config             = config
         self.inputSize          = inputSize
         self.inputSizeWithBias  = inputSize + 1
-        self.biasNode           = inputSize
+        self.biasNeuron         = inputSize
         self.outputSize         = outputSize
         self.neurons    = set(range(self.inputSizeWithBias + self.outputSize))
         self.synapses   = {} # {synapseID: Synapse}
@@ -31,7 +31,7 @@ class Organism:
         
         for i, input in enumerate(inputs):
             self.memory[i] = input
-        self.memory[self.biasNode] = 1.0
+        self.memory[self.biasNeuron] = 1.0
         
         newState = defaultdict(float)
         for synapse in self.synapses.values():
@@ -57,7 +57,7 @@ class Organism:
                     synapse.weight += self.rng.normal(0, self.config.weightMutationScale)
 
         if self.rng.random() < self.config.mutationChanceNewSynapse:
-            validSources        = list(self.neurons)
+            validSources        = [n for n in self.neurons if n <= self.inputSizeWithBias or n >= self.inputSizeWithBias + self.outputSize]
             validDestinations   = [n for n in self.neurons if n >= self.inputSizeWithBias]
             existingLinks       = set((synapse.source, synapse.destination) for synapse in self.synapses.values())
             for _ in range(10): # Retrying is faster than listing possible new links

@@ -36,9 +36,37 @@ def createVisualizationGrid(values, rows, cols, cellSize, config):
 
     return observationVisualization, grid
 
-def visualizeSynapses(canvas, organism, obsGrid, outputGrid, cellSize, config):
+def translateNeuronToCoords(neuron, organism, obsCoords, outputsCoords, cellSize):
+    if neuron < organism.inputSize:
+        print(f"neuron is input, so returning obs coord")
+        return obsCoords[neuron]
+    
+    if neuron == organism.biasNeuron:
+        print(f"neuron is bias")
+        lastObsCellY, lastObsCellX = obsCoords[-1]
+        return lastObsCellY, lastObsCellX + cellSize*4
+    
+    if neuron < organism.inputSizeWithBias + organism.outputSize:
+        print(f"neuron is output")
+        return outputsCoords[neuron - organism.inputSizeWithBias]
+    
+    # Temporary, all hidden neurons will be in this spot
+    print(f"neuron is hidden")
+    lastObsCellY, lastObsCellX = obsCoords[-1]
+    return lastObsCellY, lastObsCellX + cellSize*10
+
+def visualizeSynapses(canvas, organism, obsCoords, outputsCoords, cellSize, config):
     # NOTE: Damn I will need the innovation tracker here to know what neurons are splitting what links and have consistent positioning
-    pass
+
+    for synapse in organism.synapses.values():
+
+        print(f"\nsource neuron: {synapse.source}")
+        startpointY, startpointX    = translateNeuronToCoords(synapse.source,       organism, obsCoords, outputsCoords, cellSize)
+        print(f"destination neuron: {synapse.destination}")
+        endpointY, endpointX        = translateNeuronToCoords(synapse.destination,  organism, obsCoords, outputsCoords, cellSize)
+        cv.line(canvas, (startpointX, startpointY), (endpointX, endpointY), (1.0, 0.0, 1.0, 1.0), int(np.abs(synapse.weight*2)+2), cv.LINE_AA) # FIXME: AA doesnt work on floats, has to be uint8 :|
+
+    return canvas
 
 def createVisualization(canvasHeight, canvasWidth, organism, observation, action, config):
     # FIXME: observation and action can be taked from organism.memory, but it's 1D only.. Hmm.
@@ -60,14 +88,10 @@ def createVisualization(canvasHeight, canvasWidth, organism, observation, action
     outputVizOffsetY = (canvasHeight - outputVizHeight) // 2
     canvas[outputVizOffsetY:outputVizOffsetY+outputVizHeight, outputVizOffsetX:outputVizOffsetX+outputVizWidth] = outputViz
 
-    obsGrid     = [(y + obsVizOffsetY,      x + obsVizOffsetX)      for y, x in obsGrid]    # Confirmed correct :)
-    outputGrid  = [(y + outputVizOffsetY,   x + outputVizOffsetX)   for y, x in outputGrid] # Confirmed correct :)
-
-    # for y, x in obsCoords + outputsCoords:
-    #     cv.circle(canvas, (x, y), radius=10, color=(0.0, 0.0, 1.0, 1.0), thickness=-1)
-        
-
-    # canvas = visualizeSynapses(canvas, organism, obsCoords, outputsCoords, cellSize, config)
+    obsCoords       = [(y + obsVizOffsetY,      x + obsVizOffsetX)      for y, x in obsCoords]      # Confirmed correct :)
+    outputsCoords   = [(y + outputVizOffsetY,   x + outputVizOffsetX)   for y, x in outputsCoords]  # Confirmed correct :
+    
+    canvas = visualizeSynapses(canvas, organism, obsCoords, outputsCoords, cellSize, config)
 
     return canvas
 
