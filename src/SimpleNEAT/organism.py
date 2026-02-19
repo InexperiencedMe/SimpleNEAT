@@ -3,6 +3,7 @@ import copy
 from dataclasses import dataclass
 from collections import defaultdict
 
+# NOTE: We can potentially include bias in the synapse. Having additional bias neuron is ugly
 @dataclass(slots=True)
 class Synapse:
     source:      int

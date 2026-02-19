@@ -37,6 +37,7 @@ def createVisualizationGrid(values, rows, cols, cellSize, config):
     return observationVisualization, grid
 
 def visualizeSynapses(canvas, organism, obsGrid, outputGrid, cellSize, config):
+    # NOTE: Damn I will need the innovation tracker here to know what neurons are splitting what links and have consistent positioning
     pass
 
 def createVisualization(canvasHeight, canvasWidth, organism, observation, action, config):
@@ -47,21 +48,26 @@ def createVisualization(canvasHeight, canvasWidth, organism, observation, action
     cleanAction, actionRows, actionCols = preprocessValuesForGridVisualization(action)
     cellSize = (canvasHeight - config.gridThickness * (obsRows + 1)) // obsRows
 
-    obsViz, obsGrid = createVisualizationGrid(cleanObservation, obsRows, obsCols, cellSize, config)
+    obsViz, obsCoords = createVisualizationGrid(cleanObservation, obsRows, obsCols, cellSize, config)
     obsVizHeight, obsVizWidth = obsViz.shape[:2]
     obsVizOffsetX = 0
     obsVizOffsetY = (canvasHeight - obsVizHeight) // 2
     canvas[obsVizOffsetY:obsVizOffsetY+obsVizHeight, obsVizOffsetX:obsVizOffsetX+obsVizWidth] = obsViz
 
-    outputViz, outputGrid = createVisualizationGrid(cleanAction, actionRows, actionCols, cellSize, config)
+    outputViz, outputsCoords = createVisualizationGrid(cleanAction, actionRows, actionCols, cellSize, config)
     outputVizHeight, outputVizWidth = outputViz.shape[:2]
     outputVizOffsetX = canvasWidth - outputVizWidth
     outputVizOffsetY = (canvasHeight - outputVizHeight) // 2
     canvas[outputVizOffsetY:outputVizOffsetY+outputVizHeight, outputVizOffsetX:outputVizOffsetX+outputVizWidth] = outputViz
 
-    # obsGrid     = [(y + obsVizOffsetY,      x + obsVizOffsetX)      for y, x in obsGrid]
-    # outputGrid  = [(y + outputVizOffsetY,   x + outputVizOffsetX)   for y, x in outputGrid]
-    # canvas = visualizeSynapses(canvas, organism, obsGrid, outputGrid, cellSize, config)
+    obsGrid     = [(y + obsVizOffsetY,      x + obsVizOffsetX)      for y, x in obsGrid]    # Confirmed correct :)
+    outputGrid  = [(y + outputVizOffsetY,   x + outputVizOffsetX)   for y, x in outputGrid] # Confirmed correct :)
+
+    # for y, x in obsCoords + outputsCoords:
+    #     cv.circle(canvas, (x, y), radius=10, color=(0.0, 0.0, 1.0, 1.0), thickness=-1)
+        
+
+    # canvas = visualizeSynapses(canvas, organism, obsCoords, outputsCoords, cellSize, config)
 
     return canvas
 
