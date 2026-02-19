@@ -23,7 +23,7 @@ def createVisualizationGrid(values, rows, cols, cellSize, colored, positiveColor
     observationVisualizationHeight = (rows * cellSize) + ((rows + 1) * gridThickness)
     observationVisualizationWidth  = (cols * cellSize) + ((cols + 1) * gridThickness)
     
-    observationVisualization = np.full((observationVisualizationHeight, observationVisualizationWidth, 4), gridColor)
+    observationVisualization = np.full((observationVisualizationHeight, observationVisualizationWidth, 4), gridColor, dtype=np.float32)
 
     grid = []
     for row in range(rows):
@@ -33,10 +33,10 @@ def createVisualizationGrid(values, rows, cols, cellSize, colored, positiveColor
             observationVisualization[y_top:y_top + cellSize, x_left:x_left + cellSize] = observationRGBA[row, column]
             grid.append((y_top, x_left))
 
-    return (observationVisualization*255).astype(np.uint8), grid
+    return observationVisualization, grid
 
 def createVisualization(canvasHeight, canvasWidth, organism, observation, action):
-    canvas = np.zeros((canvasHeight, canvasWidth, 4), dtype=np.uint8)
+    canvas = np.zeros((canvasHeight, canvasWidth, 4), dtype=np.float32)
 
     coloredObservation = True
     positiveColor = (0.0, 1.0, 1.0, 1.0)
@@ -64,14 +64,14 @@ def createVisualization(canvasHeight, canvasWidth, organism, observation, action
 
     return canvas
 
-def embedForegroundOnFrame(foreground, frame, position, globalAlpha=1.0):
+def embedForegroundOnFrame(foreground01, frame, position, globalAlpha=1.0):
     offsetX, offsetY = position
-    foregroundHeight, foregroundWidth = foreground.shape[:2]
+    foregroundHeight, foregroundWidth = foreground01.shape[:2]
 
     backgroundToBeBlended = frame[offsetY:offsetY + foregroundHeight, offsetX:offsetX + foregroundWidth]
-    pixelAlpha = foreground[:, :, 3:4] * globalAlpha
+    pixelAlpha = foreground01[:, :, 3:4] * globalAlpha
 
-    blended = (backgroundToBeBlended.astype(np.float32) * (1.0 - pixelAlpha) + foreground[:, :, :3].astype(np.float32) * pixelAlpha).astype(np.uint8)
+    blended = backgroundToBeBlended * (1.0 - pixelAlpha) + foreground01[:, :, :3] * pixelAlpha
     frame[offsetY:offsetY + foregroundHeight, offsetX:offsetX + foregroundWidth] = blended
     return frame
 
@@ -87,4 +87,10 @@ def percentCornersToHeightAndWidth(canvas: np.ndarray, topLeft: tuple[float, flo
     canvasWidth     = abs(topLeftX - bottomRightX)
 
     return canvasHeight, canvasWidth
+
+def imgUint8ToFloat32(img):
+    return img.astype(np.float32) / 255
+
+def imgFloat32ToUint8(img):
+    return (np.clip(img, 0, 1) * 255).astype(np.uint8)
     
