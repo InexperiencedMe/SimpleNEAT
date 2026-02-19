@@ -13,11 +13,18 @@ initializeSynapses:             True
 
 # Showcase Options
 showcaseOptions:
-  episodes:                     5
+  episodes:                     3
   fps:                          60
   upscalingFactor:              4
   filename:                     "lunarLander"
   folder:                       "videos"
+
+  visualization:
+    coloredObservation:         True
+    positiveColor:              [0.0, 1.0, 1.0, 1.0]
+    negativeColor:              [1.0, 0.0, 0.0, 1.0]
+    gridColor:                  [0.2, 0.2, 0.2, 1.0]
+    gridThickness:              5
 
 # Mutations
 mutationChanceModifyWeight:     0.8

@@ -9,7 +9,7 @@ survivalThreshold:              0.2
 elitism:                        2
 stagnationThreshold:            30
 evaluationEpisodes:             1
-initializeSynapses:             True
+initializeSynapses:             False
 
 # Showcase Options
 showcaseOptions:
@@ -18,6 +18,13 @@ showcaseOptions:
   upscalingFactor:              8
   filename:                     "superMarioWorld"
   folder:                       "videos"
+
+  visualization:
+    coloredObservation:         False
+    positiveColor:              (0.0, 1.0, 1.0, 1.0)
+    negativeColor:              (1.0, 0.0, 0.0, 1.0)
+    gridColor:                  (0.2, 0.2, 0.2, 1.0)
+    gridThickness:              5
 
 # Mutations
 mutationChanceModifyWeight:     0.8

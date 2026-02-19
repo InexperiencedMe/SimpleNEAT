@@ -9,58 +9,59 @@ def preprocessValuesForGridVisualization(values):
 
     return values, rows, cols
 
-def createVisualizationGrid(values, rows, cols, cellSize, colored, positiveColor, negativeColor, gridColor, gridThickness): # TODO: after colored should be in config.visualization.grid...
-    if colored:
+def createVisualizationGrid(values, rows, cols, cellSize, config):
+    if config.coloredObservation:
         positiveMask = np.clip( values, 0, 1)
         maskNegative = np.clip(-values, 0, 1)
-        observationRGB = (positiveMask * positiveColor[:3]) + (maskNegative * negativeColor[:3])
+        observationRGB = (positiveMask * config.positiveColor[:3]) + (maskNegative * config.negativeColor[:3])
         observationRGBA01 = np.concatenate((observationRGB, np.ones_like(observationRGB[:, :, 0:1])), axis=-1)
     else:
         observation01 = ((values + 1) / 2.0)
         observationRGBA01 = np.stack([observation01, observation01, observation01, np.ones_like(observation01)], axis=-1)
     observationRGBA = observationRGBA01
 
-    observationVisualizationHeight = (rows * cellSize) + ((rows + 1) * gridThickness)
-    observationVisualizationWidth  = (cols * cellSize) + ((cols + 1) * gridThickness)
+    observationVisualizationHeight = (rows * cellSize) + ((rows + 1) * config.gridThickness)
+    observationVisualizationWidth  = (cols * cellSize) + ((cols + 1) * config.gridThickness)
     
-    observationVisualization = np.full((observationVisualizationHeight, observationVisualizationWidth, 4), gridColor, dtype=np.float32)
+    observationVisualization = np.full((observationVisualizationHeight, observationVisualizationWidth, 4), config.gridColor, dtype=np.float32)
 
     grid = []
+    offset = cellSize // 2 # To make grid from cell centers
     for row in range(rows):
-        y_top = gridThickness + row * (cellSize + gridThickness)
+        y_top = config.gridThickness + row * (cellSize + config.gridThickness)
         for column in range(cols):
-            x_left = gridThickness + column * (cellSize + gridThickness)
+            x_left = config.gridThickness + column * (cellSize + config.gridThickness)
             observationVisualization[y_top:y_top + cellSize, x_left:x_left + cellSize] = observationRGBA[row, column]
-            grid.append((y_top, x_left))
+            grid.append((y_top + offset, x_left + offset))
 
     return observationVisualization, grid
 
-def createVisualization(canvasHeight, canvasWidth, organism, observation, action):
-    canvas = np.zeros((canvasHeight, canvasWidth, 4), dtype=np.float32)
+def visualizeSynapses(canvas, organism, obsGrid, outputGrid, cellSize, config):
+    pass
 
-    coloredObservation = True
-    positiveColor = (0.0, 1.0, 1.0, 1.0)
-    negativeColor = (1.0, 0.0, 0.0, 1.0)
-    gridColor     = (0.2, 0.2, 0.2, 1.0)
-    gridThickness = 5
+def createVisualization(canvasHeight, canvasWidth, organism, observation, action, config):
+    # FIXME: observation and action can be taked from organism.memory, but it's 1D only.. Hmm.
+    canvas = np.zeros((canvasHeight, canvasWidth, 4), dtype=np.float32)
 
     cleanObservation, obsRows, obsCols  = preprocessValuesForGridVisualization(observation)
     cleanAction, actionRows, actionCols = preprocessValuesForGridVisualization(action)
-    cellSize = (canvasHeight - gridThickness * (obsRows + 1)) // obsRows
+    cellSize = (canvasHeight - config.gridThickness * (obsRows + 1)) // obsRows
 
-    obsViz, obsGrid = createVisualizationGrid(cleanObservation, obsRows, obsCols, cellSize, coloredObservation, positiveColor, negativeColor, gridColor, gridThickness)
+    obsViz, obsGrid = createVisualizationGrid(cleanObservation, obsRows, obsCols, cellSize, config)
     obsVizHeight, obsVizWidth = obsViz.shape[:2]
     obsVizOffsetX = 0
     obsVizOffsetY = (canvasHeight - obsVizHeight) // 2
     canvas[obsVizOffsetY:obsVizOffsetY+obsVizHeight, obsVizOffsetX:obsVizOffsetX+obsVizWidth] = obsViz
 
-    outputViz, outputGrid = createVisualizationGrid(cleanAction, actionRows, actionCols, cellSize, coloredObservation, positiveColor, negativeColor, gridColor, gridThickness)
+    outputViz, outputGrid = createVisualizationGrid(cleanAction, actionRows, actionCols, cellSize, config)
     outputVizHeight, outputVizWidth = outputViz.shape[:2]
     outputVizOffsetX = canvasWidth - outputVizWidth
     outputVizOffsetY = (canvasHeight - outputVizHeight) // 2
     canvas[outputVizOffsetY:outputVizOffsetY+outputVizHeight, outputVizOffsetX:outputVizOffsetX+outputVizWidth] = outputViz
 
-    # canvas = visualizeSynapses(observation, organism, canvas, obsGrid, outputGrid)
+    # obsGrid     = [(y + obsVizOffsetY,      x + obsVizOffsetX)      for y, x in obsGrid]
+    # outputGrid  = [(y + outputVizOffsetY,   x + outputVizOffsetX)   for y, x in outputGrid]
+    # canvas = visualizeSynapses(canvas, organism, obsGrid, outputGrid, cellSize, config)
 
     return canvas
 
