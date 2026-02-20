@@ -37,7 +37,9 @@ def createVisualizationGrid(values, rows, cols, cellSize, config):
 
     return observationVisualization, grid
 
-def translateNeuronToCoords(neuron, organism, obsCoords, outputsCoords, cellSize):
+def translateNeuronToCoords(neuron, organism, solver, obsCoords, outputsCoords, cellSize):
+    # This will be called recursively to find the placement of a neuron?
+    # TODO: A vast improvement would be calling this once for the visualization and then indexing calculating neuron placements
     if neuron < organism.inputSize:
         return obsCoords[neuron]
     
@@ -52,18 +54,14 @@ def translateNeuronToCoords(neuron, organism, obsCoords, outputsCoords, cellSize
     lastObsCellY, lastObsCellX = obsCoords[-1]
     return lastObsCellY, lastObsCellX + cellSize*10
 
-def visualizeSynapses(canvas, organism, obsCoords, outputsCoords, cellSize, config):
-    # NOTE: Damn I will need the innovation tracker here to know what neurons are splitting what links and have consistent positioning
-
+def visualizeSynapses(canvas, organism, solver, obsCoords, outputsCoords, cellSize, config):
     for synapse in organism.synapses.values():
-
-        startpointY, startpointX    = translateNeuronToCoords(synapse.source,       organism, obsCoords, outputsCoords, cellSize)
-        endpointY, endpointX        = translateNeuronToCoords(synapse.destination,  organism, obsCoords, outputsCoords, cellSize)
+        startpointY, startpointX    = translateNeuronToCoords(synapse.source,       organism, solver, obsCoords, outputsCoords, cellSize)
+        endpointY, endpointX        = translateNeuronToCoords(synapse.destination,  organism, solver, obsCoords, outputsCoords, cellSize)
         cv.line(canvas, (startpointX, startpointY), (endpointX, endpointY), (1.0, 0.0, 1.0, 1.0), int(np.abs(synapse.weight*2)+2), cv.LINE_AA) # FIXME: AA doesnt work on floats, has to be uint8 :|
-
     return canvas
 
-def createVisualization(canvasHeight, canvasWidth, organism, observation, action, config):
+def createVisualization(canvasHeight, canvasWidth, organism, solver, observation, action, config):
     # FIXME: observation and action can be taked from organism.memory, but it's 1D only.. Hmm.
     canvas = np.zeros((canvasHeight, canvasWidth, 4), dtype=np.float32)
 
@@ -86,7 +84,7 @@ def createVisualization(canvasHeight, canvasWidth, organism, observation, action
     obsCoords       = [(y + obsVizOffsetY,      x + obsVizOffsetX)      for y, x in obsCoords]      # Confirmed correct :)
     outputsCoords   = [(y + outputVizOffsetY,   x + outputVizOffsetX)   for y, x in outputsCoords]  # Confirmed correct :
     
-    canvas = visualizeSynapses(canvas, organism, obsCoords, outputsCoords, cellSize, config)
+    canvas = visualizeSynapses(canvas, organism, solver, obsCoords, outputsCoords, cellSize, config)
 
     return canvas
 

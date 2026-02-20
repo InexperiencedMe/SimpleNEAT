@@ -3,7 +3,7 @@ import numpy as np
 from SimpleNEAT.utils import ensurePath
 from SimpleNEAT.visualizations import *
 
-def showcaseOrganism(organism, environmentMaker, config):
+def showcaseOrganism(organism, solver, environmentMaker, config):
     print(f"Starting recording the showcase video")
     environment = environmentMaker(render_mode="rgb_array")
     videoPath = ensurePath(config.folder, config.filename if config.filename.endswith(".mp4") else config.filename + ".mp4")
@@ -17,7 +17,7 @@ def showcaseOrganism(organism, environmentMaker, config):
 
             environmentFrame    = imgUint8ToFloat32(environment.render().repeat(config.upscalingFactor, axis=0).repeat(config.upscalingFactor, axis=1))
             visualizationHeight, visualizationWidth = percentCornersToHeightAndWidth(environmentFrame, (0.1, 0.2), (0.9, 0.6))
-            visualization       = createVisualization(visualizationHeight, visualizationWidth, organism, observation, action, config.visualization)
+            visualization       = createVisualization(visualizationHeight, visualizationWidth, organism, solver, observation, action, config.visualization)
             finalFrame          = embedForegroundOnFrame(visualization, environmentFrame, percentCoordsToIdx(environmentFrame, (0.1, 0.2)), 1.0)
             frames.append(imgFloat32ToUint8(finalFrame))
 

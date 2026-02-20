@@ -50,7 +50,10 @@ def runEvolution(config, environmentMaker):
                     maxFitnessEver = scoreBestThisGeneration
                     bestOrganism = copy.deepcopy(population[indexBestThisGeneration])
                 
-                print(f"Generation {generation:>4}:     Best this generation: {scoreBestThisGeneration:>8.2f} | Average: {np.mean(fitnessScores):8.2f} | Best Ever: {maxFitnessEver:8.2f}")
+                print(f"""  Generation {generation:>4}:    
+                            Best this generation: {scoreBestThisGeneration:>8.2f} | 
+                            Average: {np.mean(fitnessScores):8.2f} |
+                            Best Ever: {maxFitnessEver:8.2f}""")
 
                 if maxFitnessEver >= config.targetFitness:
                     print("Target fitness reached!")
@@ -66,4 +69,4 @@ def runEvolution(config, environmentMaker):
         finally:
             pool.close()
         
-    return bestOrganism
+    return bestOrganism, solver

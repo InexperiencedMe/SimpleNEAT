@@ -139,3 +139,4 @@ class NEAT:
 
         maxSynapses = max(len(synapseIDs1), len(synapseIDs2), 1)
         return (self.config.lossWeight_E*excessCount + self.config.lossWeight_D*disjointCount) / maxSynapses + self.config.lossWeight_W*weightsDifference
+    
