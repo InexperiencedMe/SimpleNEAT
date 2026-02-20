@@ -56,6 +56,7 @@ def translateNeuronToCoords(neuron, organism, neuronToLinkMap, obsCoords, output
     return (sourceY + destinationY) // 2, (sourceX + destinationX) // 2
 
 def visualizeSynapses(canvas, organism, solver, obsCoords, outputsCoords, cellSize, config):
+    canvas = imgFloat32ToUint8(canvas) # cv2 antialiasting works only on uint8 :|
     neuronToLinkMap = {v: k for k, v in solver.tracker.novelNeurons.items()}
     for synapse in organism.synapses.values():
         startpointY, startpointX    = translateNeuronToCoords(synapse.source,       organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize)
@@ -64,11 +65,10 @@ def visualizeSynapses(canvas, organism, solver, obsCoords, outputsCoords, cellSi
         arrowLength = np.sqrt((startpointY-endpointY)**2 + (startpointX-endpointX)**2)
         if arrowLength != 0: # TODO: We could potentially display self recursion, hmm?
             arrowheadSize = config.arrowheadSize / arrowLength # Because in cv it's relative size :|
-            arrowWidth = int(np.abs(synapse.weight*2) + 3)
+            arrowWidth = int(np.abs(synapse.weight) + 1)
             arrowColor = getColorForValue(synapse.weight, config.negativeColor, config.neutralColor, config.positiveColor)
-            cv.arrowedLine(canvas, (startpointX, startpointY), (endpointX, endpointY), arrowColor, arrowWidth, line_type=cv.LINE_AA, tipLength=arrowheadSize)
-            # FIXME: AA doesnt work on floats, has to be uint8 :|
-    return canvas
+            cv.arrowedLine(canvas, (startpointX, startpointY), (endpointX, endpointY), [int(c * 255) for c in arrowColor], arrowWidth, line_type=cv.LINE_AA, tipLength=arrowheadSize)
+    return imgUint8ToFloat32(canvas)
 
 def createVisualization(canvasHeight, canvasWidth, organism, solver, observation, action, config):
     # FIXME: observation and action can be taken from organism.memory, but it's 1D only.. Hmm.
