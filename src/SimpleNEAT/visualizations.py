@@ -62,7 +62,7 @@ def visualizeSynapses(canvas, organism, solver, obsCoords, outputsCoords, cellSi
         startpointY, startpointX    = translateNeuronToCoords(synapse.source,       organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize)
         endpointY, endpointX        = translateNeuronToCoords(synapse.destination,  organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize)
 
-        arrowLength = np.sqrt((startpointY-endpointY)**2 + (startpointX-endpointX)**2)
+        arrowLength = np.sqrt((startpointY - endpointY)**2 + (startpointX - endpointX)**2)
         if arrowLength != 0: # TODO: We could potentially display self recursion, hmm?
             arrowheadSize = config.arrowheadSize / arrowLength # Because in cv it's relative size :|
             arrowWidth = int(np.abs(synapse.weight) + 1)
