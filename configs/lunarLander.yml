@@ -9,7 +9,7 @@ survivalThreshold:              0.2
 elitism:                        2
 stagnationThreshold:            50
 evaluationEpisodes:             3
-initializeSynapses:             True
+initializeSynapses:             False
 
 # Showcase Options
 showcaseOptions:

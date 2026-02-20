@@ -37,9 +37,8 @@ def createVisualizationGrid(values, rows, cols, cellSize, config):
 
     return observationVisualization, grid
 
-def translateNeuronToCoords(neuron, organism, solver, obsCoords, outputsCoords, cellSize):
-    # This will be called recursively to find the placement of a neuron?
-    # TODO: A vast improvement would be calling this once for the visualization and then indexing calculating neuron placements
+def translateNeuronToCoords(neuron, organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize):
+    # TODO: A vast improvement would be calling this once for the organism and then indexing calculating neuron placements for all episodes and steps
     if neuron < organism.inputSize:
         return obsCoords[neuron]
     
@@ -50,14 +49,17 @@ def translateNeuronToCoords(neuron, organism, solver, obsCoords, outputsCoords, 
     if neuron < organism.inputSizeWithBias + organism.outputSize:
         return outputsCoords[neuron - organism.inputSizeWithBias]
     
-    # Temporary, all hidden neurons will be in this spot
-    lastObsCellY, lastObsCellX = obsCoords[-1]
-    return lastObsCellY, lastObsCellX + cellSize*10
+    source, destination = neuronToLinkMap[neuron]
+    sourceY, sourceX            = translateNeuronToCoords(source,       organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize)
+    destinationY, destinationX  = translateNeuronToCoords(destination,  organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize)
+
+    return (sourceY + destinationY) // 2, (sourceX + destinationX) // 2
 
 def visualizeSynapses(canvas, organism, solver, obsCoords, outputsCoords, cellSize, config):
+    neuronToLinkMap = {v: k for k, v in solver.tracker.novelNeurons.items()}
     for synapse in organism.synapses.values():
-        startpointY, startpointX    = translateNeuronToCoords(synapse.source,       organism, solver, obsCoords, outputsCoords, cellSize)
-        endpointY, endpointX        = translateNeuronToCoords(synapse.destination,  organism, solver, obsCoords, outputsCoords, cellSize)
+        startpointY, startpointX    = translateNeuronToCoords(synapse.source,       organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize)
+        endpointY, endpointX        = translateNeuronToCoords(synapse.destination,  organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize)
         cv.line(canvas, (startpointX, startpointY), (endpointX, endpointY), (1.0, 0.0, 1.0, 1.0), int(np.abs(synapse.weight*2)+2), cv.LINE_AA) # FIXME: AA doesnt work on floats, has to be uint8 :|
     return canvas
 
