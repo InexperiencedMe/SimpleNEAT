@@ -21,10 +21,12 @@ showcaseOptions:
 
   visualization:
     coloredObservation:         False
-    positiveColor:              [0.0, 1.0, 1.0, 1.0]
-    negativeColor:              [1.0, 0.0, 0.0, 1.0]
+    positiveColor:              [0.439, 0.788, 0.439, 0.8]
+    neutralColor:               [0.5, 0.5, 0.5, 0.8]
+    negativeColor:              [0.788, 0.275, 0.275, 0.8]
     gridColor:                  [0.2, 0.2, 0.2, 1.0]
     gridThickness:              5
+    arrowheadSize:              20
 
 # Mutations
 mutationChanceModifyWeight:     0.8

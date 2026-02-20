@@ -60,11 +60,18 @@ def visualizeSynapses(canvas, organism, solver, obsCoords, outputsCoords, cellSi
     for synapse in organism.synapses.values():
         startpointY, startpointX    = translateNeuronToCoords(synapse.source,       organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize)
         endpointY, endpointX        = translateNeuronToCoords(synapse.destination,  organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize)
-        cv.line(canvas, (startpointX, startpointY), (endpointX, endpointY), (1.0, 0.0, 1.0, 1.0), int(np.abs(synapse.weight*2)+2), cv.LINE_AA) # FIXME: AA doesnt work on floats, has to be uint8 :|
+
+        arrowLength = np.sqrt((startpointY-endpointY)**2 + (startpointX-endpointX)**2)
+        if arrowLength != 0: # TODO: We could potentially display self recursion, hmm?
+            arrowheadSize = config.arrowheadSize / arrowLength # Because in cv it's relative size :|
+            arrowWidth = int(np.abs(synapse.weight*2) + 3)
+            arrowColor = getColorForValue(synapse.weight, config.negativeColor, config.neutralColor, config.positiveColor)
+            cv.arrowedLine(canvas, (startpointX, startpointY), (endpointX, endpointY), arrowColor, arrowWidth, line_type=cv.LINE_AA, tipLength=arrowheadSize)
+            # FIXME: AA doesnt work on floats, has to be uint8 :|
     return canvas
 
 def createVisualization(canvasHeight, canvasWidth, organism, solver, observation, action, config):
-    # FIXME: observation and action can be taked from organism.memory, but it's 1D only.. Hmm.
+    # FIXME: observation and action can be taken from organism.memory, but it's 1D only.. Hmm.
     canvas = np.zeros((canvasHeight, canvasWidth, 4), dtype=np.float32)
 
     cleanObservation, obsRows, obsCols  = preprocessValuesForGridVisualization(observation)
@@ -119,4 +126,7 @@ def imgUint8ToFloat32(img):
 
 def imgFloat32ToUint8(img):
     return (np.clip(img, 0, 1) * 255).astype(np.uint8)
-    
+
+def getColorForValue(value, negativeColor, neutralColor, positiveColor):
+    targetColor = positiveColor if value > 0 else negativeColor
+    return [n + (t - n) * np.abs(np.clip(value, -1, 1)) for n, t in zip(neutralColor, targetColor)]
