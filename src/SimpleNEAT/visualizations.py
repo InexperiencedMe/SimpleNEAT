@@ -14,12 +14,11 @@ def createVisualizationGrid(values, rows, cols, cellSize, config):
         positiveMask = np.clip( values, 0, 1)
         maskNegative = np.clip(-values, 0, 1)
         observationRGB = (positiveMask * config.positiveColor[:3]) + (maskNegative * config.negativeColor[:3])
-        observationRGBA01 = np.concatenate((observationRGB, np.ones_like(observationRGB[:, :, 0:1])), axis=-1)
+        observationRGBA = np.concatenate((observationRGB, np.ones_like(observationRGB[:, :, 0:1])), axis=-1)
     else:
         # FIXME: Not good. If observation ranges from 0 to 1, we make the range 0.5 - 1.0 which is terrible. For outputs fine, for inputs nahh
-        observation01 = ((values + 1) / 2.0)
-        observationRGBA01 = np.stack([observation01, observation01, observation01, np.ones_like(observation01)], axis=-1)
-    observationRGBA = observationRGBA01
+        observation = ((values + 1) / 2.0)
+        observationRGBA = np.stack([observation, observation, observation, np.ones_like(observation)], axis=-1)
 
     observationVisualizationHeight = (rows * cellSize) + ((rows + 1) * config.gridThickness)
     observationVisualizationWidth  = (cols * cellSize) + ((cols + 1) * config.gridThickness)
@@ -29,16 +28,15 @@ def createVisualizationGrid(values, rows, cols, cellSize, config):
     grid = []
     offset = cellSize // 2 # To make grid from cell centers
     for row in range(rows):
-        y_top = config.gridThickness + row * (cellSize + config.gridThickness)
+        y_topLeft = config.gridThickness + row * (cellSize + config.gridThickness)
         for column in range(cols):
-            x_left = config.gridThickness + column * (cellSize + config.gridThickness)
-            observationVisualization[y_top:y_top + cellSize, x_left:x_left + cellSize] = observationRGBA[row, column]
-            grid.append((y_top + offset, x_left + offset))
+            x_topLeft = config.gridThickness + column * (cellSize + config.gridThickness)
+            observationVisualization[y_topLeft:y_topLeft + cellSize, x_topLeft:x_topLeft + cellSize] = observationRGBA[row, column]
+            grid.append((y_topLeft + offset, x_topLeft + offset))
 
     return observationVisualization, grid
 
 def translateNeuronToCoords(neuron, organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize):
-    # TODO: A vast improvement would be calling this once for the organism and then indexing calculating neuron placements for all episodes and steps
     if neuron < organism.inputSize:
         return obsCoords[neuron]
     
@@ -55,12 +53,17 @@ def translateNeuronToCoords(neuron, organism, neuronToLinkMap, obsCoords, output
 
     return (sourceY + destinationY) // 2, (sourceX + destinationX) // 2
 
-def visualizeSynapses(canvas, organism, solver, obsCoords, outputsCoords, cellSize, config):
+def calculateNeuronPositions(organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize):
+    neuronPositions = {}
+    for neuron in organism.neurons:
+        neuronPositions[neuron] = translateNeuronToCoords(neuron, organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize)
+    return neuronPositions
+
+def visualizeSynapses(canvas, organism, neuronPositions, config):
     canvas = imgFloat32ToUint8(canvas) # cv2 antialiasting works only on uint8 :|
-    neuronToLinkMap = {v: k for k, v in solver.tracker.novelNeurons.items()}
     for synapse in organism.synapses.values():
-        startpointY, startpointX    = translateNeuronToCoords(synapse.source,       organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize)
-        endpointY, endpointX        = translateNeuronToCoords(synapse.destination,  organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize)
+        startpointY, startpointX    = neuronPositions[synapse.source]
+        endpointY, endpointX        = neuronPositions[synapse.destination]
 
         arrowLength = np.sqrt((startpointY - endpointY)**2 + (startpointX - endpointX)**2)
         if arrowLength != 0: # TODO: We could potentially display self recursion, hmm?
@@ -70,8 +73,17 @@ def visualizeSynapses(canvas, organism, solver, obsCoords, outputsCoords, cellSi
             cv.arrowedLine(canvas, (startpointX, startpointY), (endpointX, endpointY), [int(c * 255) for c in arrowColor], arrowWidth, line_type=cv.LINE_AA, tipLength=arrowheadSize)
     return imgUint8ToFloat32(canvas)
 
+def drawHiddenNeurons(canvas, organism, neuronPositions, cellSize, config):
+    for neuron in [organism.biasNeuron] + [n for n in organism.neurons if n > organism.inputSizeWithBias + organism.outputSize]:
+        neuronY, neuronX = neuronPositions[neuron]
+        y_topLeft, x_topLeft = neuronY - (cellSize//2), neuronX - (cellSize//2)
+        canvas[y_topLeft - config.gridThickness:y_topLeft + cellSize + config.gridThickness, x_topLeft - config.gridThickness:x_topLeft + cellSize + config.gridThickness] = config.gridColor
+        canvas[y_topLeft:y_topLeft + cellSize, x_topLeft:x_topLeft + cellSize] = getColorForValue(organism.memory[neuron], config.negativeColor, config.neutralColor, config.positiveColor)
+    return canvas
+
 def createVisualization(canvasHeight, canvasWidth, organism, solver, observation, action, config):
-    # FIXME: observation and action can be taken from organism.memory, but it's 1D only.. Hmm.
+    # TODO: To vastly optimize this and calculate neuron positions only once, I need internal state. Visualizer has to be class
+    # TODO: observation and action can be taken from organism.memory, but it's 1D only.. Hmm.
     canvas = np.zeros((canvasHeight, canvasWidth, 4), dtype=np.float32)
 
     cleanObservation, obsRows, obsCols  = preprocessValuesForGridVisualization(observation)
@@ -90,21 +102,24 @@ def createVisualization(canvasHeight, canvasWidth, organism, solver, observation
     outputVizOffsetY = (canvasHeight - outputVizHeight) // 2
     canvas[outputVizOffsetY:outputVizOffsetY+outputVizHeight, outputVizOffsetX:outputVizOffsetX+outputVizWidth] = outputViz
 
-    obsCoords       = [(y + obsVizOffsetY,      x + obsVizOffsetX)      for y, x in obsCoords]      # Confirmed correct :)
-    outputsCoords   = [(y + outputVizOffsetY,   x + outputVizOffsetX)   for y, x in outputsCoords]  # Confirmed correct :
+    obsCoords       = [(y + obsVizOffsetY,      x + obsVizOffsetX)      for y, x in obsCoords]
+    outputsCoords   = [(y + outputVizOffsetY,   x + outputVizOffsetX)   for y, x in outputsCoords]
     
-    canvas = visualizeSynapses(canvas, organism, solver, obsCoords, outputsCoords, cellSize, config)
+    neuronToLinkMap = {v: k for k, v in solver.tracker.novelNeurons.items()}
+    neuronPositions = calculateNeuronPositions(organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize)
+    canvas = visualizeSynapses(canvas, organism, neuronPositions, config)
+    canvas = drawHiddenNeurons(canvas, organism, neuronPositions, cellSize, config)
 
     return canvas
 
-def embedForegroundOnFrame(foreground01, frame, position, globalAlpha=1.0):
+def embedForegroundOnFrame(foreground, frame, position, globalAlpha=1.0):
     offsetX, offsetY = position
-    foregroundHeight, foregroundWidth = foreground01.shape[:2]
+    foregroundHeight, foregroundWidth = foreground.shape[:2]
 
     backgroundToBeBlended = frame[offsetY:offsetY + foregroundHeight, offsetX:offsetX + foregroundWidth]
-    pixelAlpha = foreground01[:, :, 3:4] * globalAlpha
+    pixelAlpha = foreground[:, :, 3:4] * globalAlpha
 
-    blended = backgroundToBeBlended * (1.0 - pixelAlpha) + foreground01[:, :, :3] * pixelAlpha
+    blended = backgroundToBeBlended * (1.0 - pixelAlpha) + foreground[:, :, :3] * pixelAlpha
     frame[offsetY:offsetY + foregroundHeight, offsetX:offsetX + foregroundWidth] = blended
     return frame
 
