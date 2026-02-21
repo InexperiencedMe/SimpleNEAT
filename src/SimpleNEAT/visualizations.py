@@ -38,14 +38,16 @@ def createVisualizationGrid(values, rows, cols, cellSize, config):
 
 def translateNeuronToCoords(neuron, organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize):
     if neuron < organism.inputSize:
-        return obsCoords[neuron]
+        inputY, inputX = obsCoords[neuron]
+        return inputY, inputX + (cellSize//2)
     
     if neuron == organism.biasNeuron:
         lastObsCellY, lastObsCellX = obsCoords[-1]
         return lastObsCellY, lastObsCellX + cellSize*4
     
     if neuron < organism.inputSizeWithBias + organism.outputSize:
-        return outputsCoords[neuron - organism.inputSizeWithBias]
+        outputY, outputX = outputsCoords[neuron - organism.inputSizeWithBias]
+        return outputY, outputX - (cellSize//2)
     
     source, destination = neuronToLinkMap[neuron]
     sourceY, sourceX            = translateNeuronToCoords(source,       organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize)
@@ -60,25 +62,25 @@ def calculateNeuronPositions(organism, neuronToLinkMap, obsCoords, outputsCoords
     return neuronPositions
 
 def visualizeSynapses(canvas, organism, neuronPositions, config):
-    canvas = imgFloat32ToUint8(canvas) # cv2 antialiasting works only on uint8 :|
-    for synapse in organism.synapses.values():
+    for synapse in sorted((s for s in organism.synapses.values() if s.enabled), key=lambda s: abs(s.weight)):
         startpointY, startpointX    = neuronPositions[synapse.source]
         endpointY, endpointX        = neuronPositions[synapse.destination]
 
         arrowLength = np.sqrt((startpointY - endpointY)**2 + (startpointX - endpointX)**2)
         if arrowLength != 0: # TODO: We could potentially display self recursion, hmm?
-            arrowheadSize = config.arrowheadSize / arrowLength # Because in cv it's relative size :|
-            arrowWidth = int(np.abs(synapse.weight) + 1)
-            arrowColor = getColorForValue(synapse.weight, config.negativeColor, config.neutralColor, config.positiveColor)
-            cv.arrowedLine(canvas, (startpointX, startpointY), (endpointX, endpointY), [int(c * 255) for c in arrowColor], arrowWidth, line_type=cv.LINE_AA, tipLength=arrowheadSize)
-    return imgUint8ToFloat32(canvas)
+            # arrowheadSize = config.arrowheadSize / arrowLength # Because in cv it's relative size :|
+            arrowWidth = int(np.abs(synapse.weight*3) + 2)
+            synapseSignalValue = organism.memory[synapse.source] * synapse.weight
+            arrowColor = getColorForValue(synapseSignalValue, config.negativeColor, config.neutralSynapseColor, config.positiveColor)
+            cv.line(canvas, (startpointX, startpointY), (endpointX, endpointY), arrowColor, arrowWidth)
+    return canvas
 
 def drawHiddenNeurons(canvas, organism, neuronPositions, cellSize, config):
     for neuron in [organism.biasNeuron] + [n for n in organism.neurons if n > organism.inputSizeWithBias + organism.outputSize]:
         neuronY, neuronX = neuronPositions[neuron]
         y_topLeft, x_topLeft = neuronY - (cellSize//2), neuronX - (cellSize//2)
         canvas[y_topLeft - config.gridThickness:y_topLeft + cellSize + config.gridThickness, x_topLeft - config.gridThickness:x_topLeft + cellSize + config.gridThickness] = config.gridColor
-        canvas[y_topLeft:y_topLeft + cellSize, x_topLeft:x_topLeft + cellSize] = getColorForValue(organism.memory[neuron], config.negativeColor, config.neutralColor, config.positiveColor)
+        canvas[y_topLeft:y_topLeft + cellSize, x_topLeft:x_topLeft + cellSize] = getColorForValue(organism.memory[neuron], config.negativeColor, config.neutralNeuronColor, config.positiveColor)
     return canvas
 
 def createVisualization(canvasHeight, canvasWidth, organism, solver, observation, action, config):
@@ -108,7 +110,7 @@ def createVisualization(canvasHeight, canvasWidth, organism, solver, observation
     neuronToLinkMap = {v: k for k, v in solver.tracker.novelNeurons.items()}
     neuronPositions = calculateNeuronPositions(organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize)
     canvas = visualizeSynapses(canvas, organism, neuronPositions, config)
-    canvas = drawHiddenNeurons(canvas, organism, neuronPositions, cellSize, config)
+    canvas = drawHiddenNeurons(canvas, organism, neuronPositions, cellSize//2, config)
 
     return canvas
 
@@ -144,4 +146,4 @@ def imgFloat32ToUint8(img):
 
 def getColorForValue(value, negativeColor, neutralColor, positiveColor):
     targetColor = positiveColor if value > 0 else negativeColor
-    return [n + (t - n) * np.abs(np.clip(value, -1, 1)) for n, t in zip(neutralColor, targetColor)]
+    return tuple(float(n + (t - n) * np.abs(np.clip(value, -1, 1))) for n, t in zip(neutralColor, targetColor))

@@ -9,11 +9,11 @@ survivalThreshold:              0.2
 elitism:                        2
 stagnationThreshold:            50
 evaluationEpisodes:             3
-initializeSynapses:             False
+initializeSynapses:             True
 
 # Showcase Options
 showcaseOptions:
-  episodes:                     3
+  episodes:                     5
   fps:                          60
   upscalingFactor:              4
   filename:                     "lunarLander"
@@ -21,9 +21,10 @@ showcaseOptions:
 
   visualization:
     coloredObservation:         True
-    positiveColor:              [0.439, 0.788, 0.439, 0.4]
-    neutralColor:               [0.5, 0.5, 0.5, 0.4]
-    negativeColor:              [0.788, 0.275, 0.275, 0.4]
+    positiveColor:              [0.439, 0.788, 0.439, 1.0]
+    neutralNeuronColor:         [0.0, 0.0, 0.0, 1.0]
+    neutralSynapseColor:        [0.0, 0.0, 0.0, 0.0]
+    negativeColor:              [0.788, 0.275, 0.275, 1.0]
     gridColor:                  [0.2, 0.2, 0.2, 1.0]
     gridThickness:              5
     arrowheadSize:              20
