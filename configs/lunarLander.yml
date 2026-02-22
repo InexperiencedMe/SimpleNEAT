@@ -2,13 +2,13 @@ runName: "lunarLanderNEAT"
 seed: 123
 
 # Main
-targetFitness:                  320.0
+targetFitness:                  330.0
 populationSize:                 150
 targetSpeciesSize:              15
 survivalThreshold:              0.2
 elitism:                        2
 stagnationThreshold:            50
-evaluationEpisodes:             3
+evaluationEpisodes:             5
 initializeSynapses:             True
 
 # Showcase Options
@@ -31,8 +31,8 @@ showcaseOptions:
 
 # Mutations
 mutationChanceModifyWeight:     0.8
-mutationChanceNewSynapse:       0.2
-mutationChanceNewNeuron:        0.1
+mutationChanceNewSynapse:       0.03
+mutationChanceNewNeuron:        0.01
 resetWeightChance:              0.1
 weightMutationScale:            0.01
 

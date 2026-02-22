@@ -91,6 +91,8 @@ class Organism:
                     self.synapses[newLinkID2] = Synapse(newNeuron, synapseToSplit.destination, synapseToSplit.weight, True)
                     break
 
+        # NOTE: I really believe we need equal chance mutation to delete a neuron or synapse, so on average they don't grow randomly, and only grow if it increases fitness
+
     def reproduce(self, otherParent):
         child = Organism(self.config, self.inputSize, self.outputSize, self.rng)
         child.neurons = set(self.neurons)
