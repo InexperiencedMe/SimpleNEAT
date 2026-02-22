@@ -38,7 +38,7 @@ def createVisualizationGrid(values, rows, cols, cellSize, config):
 def translateNeuronToCoords(neuron, organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize, gridThickness):
     if neuron < organism.inputSize:
         inputY, inputX = obsCoords[neuron]
-        return inputY, inputX + (cellSize//2 + gridThickness)
+        return inputY, inputX # + (cellSize//2 + gridThickness)
     
     if neuron == organism.biasNeuron:
         lastObsCellY, lastObsCellX = obsCoords[-1]
@@ -46,13 +46,13 @@ def translateNeuronToCoords(neuron, organism, neuronToLinkMap, obsCoords, output
     
     if neuron < organism.inputSizeWithBias + organism.outputSize:
         outputY, outputX = outputsCoords[neuron - organism.inputSizeWithBias]
-        return outputY, outputX - (cellSize//2 + gridThickness)
+        return outputY, outputX # - (cellSize//2 + gridThickness)
     
     source, destination = neuronToLinkMap[neuron]
     sourceY, sourceX            = translateNeuronToCoords(source,       organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize, gridThickness)
     destinationY, destinationX  = translateNeuronToCoords(destination,  organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize, gridThickness)
 
-    return sourceY + (destinationY - sourceY) // 2, sourceX + (sourceX + destinationX) // 2
+    return (sourceY + destinationY) // 2, (sourceX + destinationX) // 2
 
 def calculateNeuronPositions(organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize, gridThickness):
     neuronPositions = {}
@@ -95,21 +95,22 @@ def createVisualization(canvasHeight, canvasWidth, organism, solver, observation
     obsVizHeight, obsVizWidth = obsViz.shape[:2]
     obsVizOffsetX = 0
     obsVizOffsetY = (canvasHeight - obsVizHeight) // 2
-    canvas[obsVizOffsetY:obsVizOffsetY+obsVizHeight, obsVizOffsetX:obsVizOffsetX+obsVizWidth] = obsViz
 
     outputViz, outputsCoords = createVisualizationGrid(cleanAction, actionRows, actionCols, cellSize, config)
     outputVizHeight, outputVizWidth = outputViz.shape[:2]
     outputVizOffsetX = canvasWidth - outputVizWidth
     outputVizOffsetY = (canvasHeight - outputVizHeight) // 2
-    canvas[outputVizOffsetY:outputVizOffsetY+outputVizHeight, outputVizOffsetX:outputVizOffsetX+outputVizWidth] = outputViz
 
     obsCoords       = [(y + obsVizOffsetY,      x + obsVizOffsetX)      for y, x in obsCoords]
     outputsCoords   = [(y + outputVizOffsetY,   x + outputVizOffsetX)   for y, x in outputsCoords]
     
     neuronToLinkMap = {v: k for k, v in solver.tracker.novelNeurons.items()}
-    neuronPositions = calculateNeuronPositions(organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize, config.gridThickness)
+    neuronPositions = calculateNeuronPositions(organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize, config.gridThickness) # Need to save this output somehow instead of recalculating each frame
     canvas = visualizeSynapses(canvas, organism, neuronPositions, config)
+
     canvas = drawHiddenNeurons(canvas, organism, neuronPositions, cellSize//2, config)
+    canvas[obsVizOffsetY:obsVizOffsetY + obsVizHeight, obsVizOffsetX:obsVizOffsetX + obsVizWidth] = obsViz
+    canvas[outputVizOffsetY:outputVizOffsetY + outputVizHeight, outputVizOffsetX:outputVizOffsetX + outputVizWidth] = outputViz
 
     return canvas
 
