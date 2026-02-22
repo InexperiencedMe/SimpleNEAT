@@ -10,6 +10,13 @@ class Synapse:
     weight:      float
     enabled:     bool
 
+    def __str__(self) -> str:
+        return f"""
+        Synapse(source      = {self.source}
+                weight      = {self.weight:.2f}
+                destination = {self.destination}
+                enabled     = {self.enabled})"""
+
 class Organism:
     def __init__(self, config, inputSize, outputSize, rng):
         self.config             = config

@@ -24,7 +24,7 @@ class CleanMario(gym.Wrapper):
         return Xposition, isDead
 
     def processObservation(self, obs):
-        return obs[::16, ::16] / 255.0
+        return (obs[::16, ::16] / 127.5) - 1
 
     def reset(self, seed=None):
         obs, info = self.env.reset(seed=seed)

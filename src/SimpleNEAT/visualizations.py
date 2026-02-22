@@ -16,7 +16,6 @@ def createVisualizationGrid(values, rows, cols, cellSize, config):
         observationRGB = (positiveMask * config.positiveColor[:3]) + (maskNegative * config.negativeColor[:3])
         observationRGBA = np.concatenate((observationRGB, np.ones_like(observationRGB[:, :, 0:1])), axis=-1)
     else:
-        # FIXME: Not good. If observation ranges from 0 to 1, we make the range 0.5 - 1.0 which is terrible. For outputs fine, for inputs nahh
         observation = ((values + 1) / 2.0)
         observationRGBA = np.stack([observation, observation, observation, np.ones_like(observation)], axis=-1)
 
@@ -36,10 +35,10 @@ def createVisualizationGrid(values, rows, cols, cellSize, config):
 
     return observationVisualization, grid
 
-def translateNeuronToCoords(neuron, organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize):
+def translateNeuronToCoords(neuron, organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize, gridThickness):
     if neuron < organism.inputSize:
         inputY, inputX = obsCoords[neuron]
-        return inputY, inputX + (cellSize//2)
+        return inputY, inputX + (cellSize//2 + gridThickness)
     
     if neuron == organism.biasNeuron:
         lastObsCellY, lastObsCellX = obsCoords[-1]
@@ -47,22 +46,22 @@ def translateNeuronToCoords(neuron, organism, neuronToLinkMap, obsCoords, output
     
     if neuron < organism.inputSizeWithBias + organism.outputSize:
         outputY, outputX = outputsCoords[neuron - organism.inputSizeWithBias]
-        return outputY, outputX - (cellSize//2)
+        return outputY, outputX - (cellSize//2 + gridThickness)
     
     source, destination = neuronToLinkMap[neuron]
-    sourceY, sourceX            = translateNeuronToCoords(source,       organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize)
-    destinationY, destinationX  = translateNeuronToCoords(destination,  organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize)
+    sourceY, sourceX            = translateNeuronToCoords(source,       organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize, gridThickness)
+    destinationY, destinationX  = translateNeuronToCoords(destination,  organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize, gridThickness)
 
-    return (sourceY + destinationY) // 2, (sourceX + destinationX) // 2
+    return sourceY + (destinationY - sourceY) // 2, sourceX + (sourceX + destinationX) // 2
 
-def calculateNeuronPositions(organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize):
+def calculateNeuronPositions(organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize, gridThickness):
     neuronPositions = {}
     for neuron in organism.neurons:
-        neuronPositions[neuron] = translateNeuronToCoords(neuron, organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize)
+        neuronPositions[neuron] = translateNeuronToCoords(neuron, organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize, gridThickness)
     return neuronPositions
 
 def visualizeSynapses(canvas, organism, neuronPositions, config):
-    for synapse in sorted((s for s in organism.synapses.values() if s.enabled), key=lambda s: abs(s.weight)):
+    for synapse in sorted((s for s in organism.synapses.values() if s.enabled), key=lambda s: abs(organism.memory[s.source] * s.weight)):
         startpointY, startpointX    = neuronPositions[synapse.source]
         endpointY, endpointX        = neuronPositions[synapse.destination]
 
@@ -72,7 +71,7 @@ def visualizeSynapses(canvas, organism, neuronPositions, config):
             arrowWidth = int(np.abs(synapse.weight*3) + 2)
             synapseSignalValue = organism.memory[synapse.source] * synapse.weight
             arrowColor = getColorForValue(synapseSignalValue, config.negativeColor, config.neutralSynapseColor, config.positiveColor)
-            cv.line(canvas, (startpointX, startpointY), (endpointX, endpointY), arrowColor, arrowWidth)
+            cv.line(canvas, (startpointX, startpointY), (endpointX, endpointY), arrowColor, arrowWidth, lineType=cv.LINE_AA)
     return canvas
 
 def drawHiddenNeurons(canvas, organism, neuronPositions, cellSize, config):
@@ -108,7 +107,7 @@ def createVisualization(canvasHeight, canvasWidth, organism, solver, observation
     outputsCoords   = [(y + outputVizOffsetY,   x + outputVizOffsetX)   for y, x in outputsCoords]
     
     neuronToLinkMap = {v: k for k, v in solver.tracker.novelNeurons.items()}
-    neuronPositions = calculateNeuronPositions(organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize)
+    neuronPositions = calculateNeuronPositions(organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize, config.gridThickness)
     canvas = visualizeSynapses(canvas, organism, neuronPositions, config)
     canvas = drawHiddenNeurons(canvas, organism, neuronPositions, cellSize//2, config)
 
