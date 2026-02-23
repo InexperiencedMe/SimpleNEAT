@@ -2,7 +2,7 @@ runName: "lunarLanderNEAT"
 seed: 123
 
 # Main
-targetFitness:                      330.0
+targetFitness:                      320.0
 populationSize:                     150
 targetSpeciesSize:                  15
 survivalThreshold:                  0.2

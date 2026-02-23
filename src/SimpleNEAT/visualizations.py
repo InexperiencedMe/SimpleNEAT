@@ -40,7 +40,7 @@ def translateNeuronToCoords(neuron, organism, neuronToLinkMap, obsCoords, output
 
     if neuron < organism.inputSize:
         inputY, inputX = obsCoords[neuron]
-        return inputY, inputX # + (cellSize//2 + gridThickness)
+        return inputY, inputX
     
     if neuron == organism.biasNeuron:
         lastObsCellY, lastObsCellX = obsCoords[-1]
@@ -48,7 +48,7 @@ def translateNeuronToCoords(neuron, organism, neuronToLinkMap, obsCoords, output
     
     if neuron < organism.inputSizeWithBias + organism.outputSize:
         outputY, outputX = outputsCoords[neuron - organism.inputSizeWithBias]
-        return outputY, outputX # - (cellSize//2 + gridThickness)
+        return outputY, outputX
     
     source, destination = neuronToLinkMap[neuron]
     sourceY, sourceX            = translateNeuronToCoords(source,       organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize, gridThickness, alreadyCalculatedPositions)
