@@ -24,13 +24,15 @@ class Organism:
         self.inputSizeWithBias  = inputSize + 1
         self.biasNeuron         = inputSize
         self.outputSize         = outputSize
-        self.neurons    = set(range(self.inputSizeWithBias + self.outputSize))
-        self.synapses   = {} # {synapseID: Synapse}
-        self.memory     = defaultdict(float)
-        self.rng        = rng
+        self.neurons     = set(range(self.inputSizeWithBias + self.outputSize))
+        self.synapses    = {} # {synapseID: Synapse}
+        self.memory      = defaultdict(float)
+        self.lastSignals = defaultdict(float) # Not a fan, but I need exact signals for visualization
+        self.rng         = rng
 
     def clearMemory(self):
         self.memory.clear()
+        self.lastSignals.clear()
 
     def __call__(self, inputs):
         if inputs.ndim > 1: inputs = inputs.ravel()
@@ -40,9 +42,11 @@ class Organism:
         self.memory[self.biasNeuron] = 1.0
         
         newState = defaultdict(float)
-        for synapse in self.synapses.values():
+        for synapseID, synapse in self.synapses.items():
             if synapse.enabled:
-                newState[synapse.destination] += self.memory[synapse.source] * synapse.weight
+                signal = self.memory[synapse.source] * synapse.weight
+                newState[synapse.destination] += signal
+                self.lastSignals[synapseID] = signal
 
         for neuronID in self.neurons:
             if neuronID >= self.inputSizeWithBias: 

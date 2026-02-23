@@ -63,16 +63,15 @@ def calculateNeuronPositions(organism, neuronToLinkMap, obsCoords, outputsCoords
     return neuronPositions
 
 def visualizeSynapses(canvas, organism, neuronPositions, config):
-    for synapse in sorted((s for s in organism.synapses.values() if s.enabled), key=lambda s: abs(organism.memory[s.source] * s.weight)):
+    synapseSignalPairs = ((synapse, organism.lastSignals[id]) for id, synapse in organism.synapses.items() if synapse.enabled)
+    for synapse, signal in sorted(synapseSignalPairs, key=lambda pair: abs(pair[1])):
         startpointY, startpointX    = neuronPositions[synapse.source]
         endpointY, endpointX        = neuronPositions[synapse.destination]
 
         arrowLength = np.sqrt((startpointY - endpointY)**2 + (startpointX - endpointX)**2)
         if arrowLength != 0: # TODO: We could potentially display self recursion, hmm?
-            # arrowheadSize = config.arrowheadSize / arrowLength # Because in cv it's relative size :|
             arrowWidth = int(np.abs(synapse.weight*3) + 2)
-            synapseSignalValue = organism.memory[synapse.source] * synapse.weight
-            arrowColor = getColorForValue(synapseSignalValue, config.negativeColor, config.neutralSynapseColor, config.positiveColor)
+            arrowColor = getColorForValue(signal, config.negativeColor, config.neutralSynapseColor, config.positiveColor)
             cv.line(canvas, (startpointX, startpointY), (endpointX, endpointY), arrowColor, arrowWidth, lineType=cv.LINE_AA)
     return canvas
 

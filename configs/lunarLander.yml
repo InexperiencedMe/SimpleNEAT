@@ -8,7 +8,7 @@ targetSpeciesSize:                  15
 survivalThreshold:                  0.2
 elitism:                            2
 stagnationThreshold:                50
-evaluationEpisodes:                 5
+evaluationEpisodes:                 3
 initializeSynapses:                 True
 
 # Showcase Options
