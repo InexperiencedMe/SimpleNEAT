@@ -44,8 +44,9 @@ class Organism:
             if synapse.enabled:
                 newState[synapse.destination] += self.memory[synapse.source] * synapse.weight
 
-        for neuronID, activatonInput in newState.items():
-            self.memory[neuronID] = np.tanh(activatonInput)
+        for neuronID in self.neurons:
+            if neuronID >= self.inputSizeWithBias: 
+                self.memory[neuronID] = np.tanh(newState[neuronID])
         
         return np.array([self.memory[self.inputSizeWithBias + i] for i in range(self.outputSize)])
     
