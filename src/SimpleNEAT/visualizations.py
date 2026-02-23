@@ -109,8 +109,8 @@ def createVisualization(canvasHeight, canvasWidth, organism, solver, observation
     neuronPositions = calculateNeuronPositions(organism, neuronToLinkMap, obsCoords, outputsCoords, cellSize, config.gridThickness) # Need to save this output somehow instead of recalculating each frame
     canvas = visualizeSynapses(canvas, organism, neuronPositions, config)
 
-    canvas = drawHiddenNeurons(canvas, organism, neuronPositions, cellSize//3, config)
     canvas[obsVizOffsetY:obsVizOffsetY + obsVizHeight, obsVizOffsetX:obsVizOffsetX + obsVizWidth] = obsViz
+    canvas = drawHiddenNeurons(canvas, organism, neuronPositions, cellSize//3, config)
     canvas[outputVizOffsetY:outputVizOffsetY + outputVizHeight, outputVizOffsetX:outputVizOffsetX + outputVizWidth] = outputViz
 
     return canvas

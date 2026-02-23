@@ -1,10 +1,9 @@
 import imageio
-import numpy as np
 from SimpleNEAT.utils import ensurePath
 from SimpleNEAT.visualizations import *
 
 def showcaseOrganism(organism, solver, environmentMaker, config):
-    print(f"Starting recording the showcase video")
+    print(f"Recording the showcase video")
     environment = environmentMaker(render_mode="rgb_array")
     videoPath = ensurePath(config.folder, config.filename if config.filename.endswith(".mp4") else config.filename + ".mp4")
     with imageio.get_writer(videoPath, fps=config.fps) as writer:

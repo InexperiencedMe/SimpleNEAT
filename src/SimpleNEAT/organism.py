@@ -79,7 +79,7 @@ class Organism:
                     if link not in existingLinks:
                         self.synapses[tracker.getSynapseID(source, destination)] = Synapse(source, destination, self.rng.normal(0, 1.0), True)
                         break
-            else: # Remove a synapse
+            else: # Remove a synapse. NOTE: Consider not removing synapses? Because synapses also get removed with removed neurons, so we're biased towards that
                 if self.synapses:
                     del self.synapses[self.rng.choice(list(self.synapses.keys()))]
         

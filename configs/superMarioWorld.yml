@@ -18,17 +18,17 @@ showcaseOptions:
   upscalingFactor:                  8
   filename:                         "superMarioWorld"
   folder:                           "videos"
-  vizCornerTopLeftInPercent:        [0.1, 0.2]
-  vizCornerBottomRightInPercent:    [0.9, 0.5]
+  vizCornerTopLeftInPercent:        [0.05, 0.2]
+  vizCornerBottomRightInPercent:    [0.95, 0.5]
   globalAlpha:                      0.8
 
   visualization:
-    coloredObservation:             False
-    positiveColor:                  [0.439, 0.788, 0.439, 0.8]
-    neutralNeuronColor:             [0.0, 0.0, 0.0, 0.8]
-    neutralSynapseColor:            [0.05, 0.05, 0.05, 0.1]
-    negativeColor:                  [0.788, 0.275, 0.275, 0.8]
-    gridColor:                      [0.2, 0.2, 0.2, 0.8]
+    coloredObservation:             True
+    positiveColor:                  [0.439, 0.788, 0.439, 1.0]
+    neutralNeuronColor:             [1.0, 1.0, 1.0, 1.0]
+    neutralSynapseColor:            [0.9, 0.9, 0.9, 0.05]
+    negativeColor:                  [0.788, 0.275, 0.275, 1.0]
+    gridColor:                      [0.0, 0.0, 0.0, 1.0]
     gridThickness:                  5
     synapseWidthMultiplier:         3
 

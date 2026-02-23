@@ -8,35 +8,41 @@ from SimpleNEAT.showcaseOrganism import showcaseOrganism
 
 class CleanMario(gym.Wrapper):
     def __init__(self, env):
-        self.env = GrayscaleObservation(env)
-        self.actionSize = 12
-        self.observationShape = (16, 14)
+        self.actionSize = 6 
+        self.observationShape = (14, 16)
         self.observationSize = np.prod(self.observationShape)
+
+        self.env = ResizeObservation(GrayscaleObservation(env), self.observationShape)
         
         self.max_Xposition      = 0
         self.stagnationCounter  = 0
 
     def getRAMvalues(self):
         ram = self.env.unwrapped.get_ram()
-
-        Xposition = int(ram[0x94]) + (int(ram[0x95]) * 256) # low and high byte of X position
-        isDead = (ram[0x71] == 9)                             # 9 = dying animation
+        Xposition = int(ram[0x94]) + (int(ram[0x95]) * 256) 
+        isDead = (ram[0x71] == 9)                             
         return Xposition, isDead
 
     def processObservation(self, obs):
-        return (obs[::16, ::16] / 127.5) - 1
+        return (obs / 127.5) - 1
 
     def reset(self, seed=None):
         obs, info = self.env.reset(seed=seed)
-        
         Xposition, _ = self.getRAMvalues()
         self.max_Xposition = Xposition
         self.stagnationCounter = 0
-        
         return self.processObservation(obs)
 
     def step(self, action):
-        obs, _, terminated, truncated, info = self.env.step([1 if x > 0 else 0 for x in action])
+        fullAction = [0] * 12
+        fullAction[0] = 1 if action[0] > 0 else 0 # B (Jump)
+        fullAction[1] = 1 if action[1] > 0 else 0 # Y (Run/Shoot)
+        fullAction[5] = 1 if action[2] > 0 else 0 # Down
+        fullAction[6] = 1 if action[3] > 0 else 0 # Left
+        fullAction[7] = 1 if action[4] > 0 else 0 # Right
+        fullAction[8] = 1 if action[5] > 0 else 0 # A (Spin Jump)
+
+        obs, _, terminated, truncated, info = self.env.step(fullAction)
         reward = 0
 
         current_X, isDead = self.getRAMvalues()
