@@ -67,36 +67,49 @@ class Organism:
                 else:
                     synapse.weight += self.rng.normal(0, self.config.weightMutationScale)
 
-        if self.rng.random() < self.config.mutationChanceNewSynapse:
-            validSources        = list(self.neurons)
-            validDestinations   = [n for n in self.neurons if n >= self.inputSizeWithBias]
-            existingLinks       = set((synapse.source, synapse.destination) for synapse in self.synapses.values())
-            for _ in range(10): # Retrying is faster than listing possible new links
-                source        = int(self.rng.choice(validSources))
-                destination   = int(self.rng.choice(validDestinations))
-                link = (source, destination)
-                if link not in existingLinks:
-                    self.synapses[tracker.getSynapseID(source, destination)] = Synapse(source, destination, self.rng.normal(0, 1.0), True)
-                    break
+        if self.rng.random() < self.config.mutationChanceSynapse:
+            if self.rng.random() < 0.5: # Add a synapse
+                validSources        = list(self.neurons)
+                validDestinations   = [n for n in self.neurons if n >= self.inputSizeWithBias]
+                existingLinks       = set((synapse.source, synapse.destination) for synapse in self.synapses.values())
+                for _ in range(10): # Retrying is faster than listing possible new links
+                    source        = int(self.rng.choice(validSources))
+                    destination   = int(self.rng.choice(validDestinations))
+                    link = (source, destination)
+                    if link not in existingLinks:
+                        self.synapses[tracker.getSynapseID(source, destination)] = Synapse(source, destination, self.rng.normal(0, 1.0), True)
+                        break
+            else: # Remove a synapse
+                if self.synapses:
+                    del self.synapses[self.rng.choice(list(self.synapses.keys()))]
         
-        if self.rng.random() < self.config.mutationChanceNewNeuron and self.synapses:
-            synapseKeys = list(self.synapses.keys())
-            for _ in range(10):
-                synapseToSplit = self.synapses[self.rng.choice(synapseKeys)]
-                if synapseToSplit.enabled:
-                    synapseToSplit.enabled = False
+        if self.rng.random() < self.config.mutationChanceNeuron:
+            if self.rng.random() < 0.5: # Add a neuron
+                if self.synapses:
+                    synapseKeys = list(self.synapses.keys())
+                    for _ in range(10):
+                        synapseToSplit = self.synapses[self.rng.choice(synapseKeys)]
+                        if synapseToSplit.enabled:
+                            synapseToSplit.enabled = False
 
-                    newNeuron = tracker.getNeuronID(synapseToSplit.source, synapseToSplit.destination)
-                    self.neurons.add(newNeuron)
+                            newNeuron = tracker.getNeuronID(synapseToSplit.source, synapseToSplit.destination)
+                            self.neurons.add(newNeuron)
 
-                    newLinkID1 = tracker.getSynapseID(synapseToSplit.source, newNeuron)
-                    self.synapses[newLinkID1] = Synapse(synapseToSplit.source, newNeuron, 1.0, True)
+                            newLinkID1 = tracker.getSynapseID(synapseToSplit.source, newNeuron)
+                            self.synapses[newLinkID1] = Synapse(synapseToSplit.source, newNeuron, 1.0, True)
 
-                    newLinkID2 = tracker.getSynapseID(newNeuron, synapseToSplit.destination)
-                    self.synapses[newLinkID2] = Synapse(newNeuron, synapseToSplit.destination, synapseToSplit.weight, True)
-                    break
-
-        # NOTE: I really believe we need equal chance mutation to delete a neuron or synapse, so on average they don't grow randomly, and only grow if it increases fitness
+                            newLinkID2 = tracker.getSynapseID(newNeuron, synapseToSplit.destination)
+                            self.synapses[newLinkID2] = Synapse(newNeuron, synapseToSplit.destination, synapseToSplit.weight, True)
+                            break
+            else: # Remove a neuron
+                hiddenNeurons = [n for n in self.neurons if n >= self.inputSizeWithBias + self.outputSize]
+                if hiddenNeurons:
+                    neuronToRemove = int(self.rng.choice(hiddenNeurons))
+                    self.neurons.remove(neuronToRemove)
+                    
+                    synapsesToRemove = [id for id, s in self.synapses.items() if s.source == neuronToRemove or s.destination == neuronToRemove]
+                    for synapseID in synapsesToRemove:
+                        del self.synapses[synapseID]
 
     def reproduce(self, otherParent):
         child = Organism(self.config, self.inputSize, self.outputSize, self.rng)
