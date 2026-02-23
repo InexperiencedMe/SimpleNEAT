@@ -30,7 +30,6 @@ showcaseOptions:
     negativeColor:                  [0.788, 0.275, 0.275, 1.0]
     gridColor:                      [0.8, 0.8, 0.8, 1.0]
     gridThickness:                  5
-    arrowheadSize:                  20
 
 # Mutations
 mutationChanceModifyWeight:         0.8
