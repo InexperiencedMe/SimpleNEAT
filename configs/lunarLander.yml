@@ -2,43 +2,46 @@ runName: "lunarLanderNEAT"
 seed: 123
 
 # Main
-targetFitness:                  330.0
-populationSize:                 150
-targetSpeciesSize:              15
-survivalThreshold:              0.2
-elitism:                        2
-stagnationThreshold:            50
-evaluationEpisodes:             5
-initializeSynapses:             True
+targetFitness:                      330.0
+populationSize:                     150
+targetSpeciesSize:                  15
+survivalThreshold:                  0.2
+elitism:                            2
+stagnationThreshold:                50
+evaluationEpisodes:                 5
+initializeSynapses:                 True
 
 # Showcase Options
 showcaseOptions:
-  episodes:                     10
-  fps:                          60
-  upscalingFactor:              4
-  filename:                     "lunarLander"
-  folder:                       "videos"
+  episodes:                         10
+  fps:                              60
+  upscalingFactor:                  4
+  filename:                         "lunarLander"
+  folder:                           "videos"
+  vizCornerTopLeftInPercent:        [0.05, 0.05]
+  vizCornerBottomRightInPercent:    [0.95, 0.60]
+  globalAlpha:                      0.8
 
   visualization:
-    coloredObservation:         True
-    positiveColor:              [0.439, 0.788, 0.439, 1.0]
-    neutralNeuronColor:         [0.0, 0.0, 0.0, 1.0]
-    neutralSynapseColor:        [0.05, 0.05, 0.05, 1.0]
-    negativeColor:              [0.788, 0.275, 0.275, 1.0]
-    gridColor:                  [0.8, 0.8, 0.8, 1.0]
-    gridThickness:              5
-    arrowheadSize:              20
+    coloredObservation:             True
+    positiveColor:                  [0.439, 0.788, 0.439, 1.0]
+    neutralNeuronColor:             [0.0, 0.0, 0.0, 1.0]
+    neutralSynapseColor:            [0.05, 0.05, 0.05, 1.0]
+    negativeColor:                  [0.788, 0.275, 0.275, 1.0]
+    gridColor:                      [0.8, 0.8, 0.8, 1.0]
+    gridThickness:                  5
+    arrowheadSize:                  20
 
 # Mutations
-mutationChanceModifyWeight:     0.8
-mutationChanceNewSynapse:       0.03
-mutationChanceNewNeuron:        0.01
-resetWeightChance:              0.1
-weightMutationScale:            0.01
+mutationChanceModifyWeight:         0.8
+mutationChanceNewSynapse:           0.05
+mutationChanceNewNeuron:            0.02
+resetWeightChance:                  0.1
+weightMutationScale:                0.01
 
 # Rarely Modified
-defaultCompatibilityThreshold:  3.0
-compatibilityAdjustmentSpeed:   0.2
-lossWeight_E:                   1.0
-lossWeight_D:                   1.0
-lossWeight_W:                   0.0
+defaultCompatibilityThreshold:      3.0
+compatibilityAdjustmentSpeed:       0.2
+lossWeight_E:                       1.0
+lossWeight_D:                       1.0
+lossWeight_W:                       0.0

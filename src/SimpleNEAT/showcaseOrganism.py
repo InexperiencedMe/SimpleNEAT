@@ -16,9 +16,9 @@ def showcaseOrganism(organism, solver, environmentMaker, config):
                 action = organism(observation)
 
                 environmentFrame    = imgUint8ToFloat32(environment.render().repeat(config.upscalingFactor, axis=0).repeat(config.upscalingFactor, axis=1))
-                visualizationHeight, visualizationWidth = percentCornersToHeightAndWidth(environmentFrame, (0.05, 0.05), (0.95, 0.6))
+                visualizationHeight, visualizationWidth = percentCornersToHeightAndWidth(environmentFrame, config.vizCornerTopLeftInPercent, config.vizCornerBottomRightInPercent)
                 visualization       = createVisualization(visualizationHeight, visualizationWidth, organism, solver, observation, action, config.visualization)
-                finalFrame          = embedForegroundOnFrame(visualization, environmentFrame, percentCoordsToIdx(environmentFrame, (0.05, 0.05)), 0.8)
+                finalFrame          = embedForegroundOnFrame(visualization, environmentFrame, percentCoordsToIdx(environmentFrame, config.vizCornerTopLeftInPercent), config.globalAlpha)
                 writer.append_data(imgFloat32ToUint8(finalFrame))
 
                 observation, reward, done = environment.step(action)

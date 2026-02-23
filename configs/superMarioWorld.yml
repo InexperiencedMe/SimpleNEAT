@@ -2,43 +2,45 @@ runName: "superMarioWorldNEAT"
 seed: 123
 
 # Main
-targetFitness:                  10000.0
-populationSize:                 100
-targetSpeciesSize:              10
-survivalThreshold:              0.2
-elitism:                        2
-stagnationThreshold:            30
-evaluationEpisodes:             1
-initializeSynapses:             False
+targetFitness:                      10000.0
+populationSize:                     100
+targetSpeciesSize:                  10
+survivalThreshold:                  0.2
+elitism:                            2
+stagnationThreshold:                30
+evaluationEpisodes:                 1
+initializeSynapses:                 False
 
 # Showcase Options
 showcaseOptions:
-  episodes:                     1
-  fps:                          60
-  upscalingFactor:              8
-  filename:                     "superMarioWorld"
-  folder:                       "videos"
+  episodes:                         1
+  fps:                              60
+  upscalingFactor:                  8
+  filename:                         "superMarioWorld"
+  folder:                           "videos"
+  vizCornerTopLeftInPercent:        [0.05, 0.05]
+  vizCornerBottomRightInPercent:    [0.95, 0.60]
+  globalAlpha:                      0.8
 
   visualization:
-    coloredObservation:         False
-    positiveColor:              [0.439, 0.788, 0.439, 1.0]
-    neutralNeuronColor:         [0.0, 0.0, 0.0, 1.0]
-    neutralSynapseColor:        [1.0, 0.0, 1.0, 1.0]
-    negativeColor:              [0.788, 0.275, 0.275, 1.0]
-    gridColor:                  [0.2, 0.2, 0.2, 1.0]
-    gridThickness:              5
-    arrowheadSize:              20
+    coloredObservation:             False
+    positiveColor:                  [0.439, 0.788, 0.439, 1.0]
+    neutralNeuronColor:             [0.0, 0.0, 0.0, 1.0]
+    neutralSynapseColor:            [1.0, 0.0, 1.0, 1.0]
+    negativeColor:                  [0.788, 0.275, 0.275, 1.0]
+    gridColor:                      [0.2, 0.2, 0.2, 1.0]
+    gridThickness:                  5
 
 # Mutations
-mutationChanceModifyWeight:     0.8
-mutationChanceNewSynapse:       0.2
-mutationChanceNewNeuron:        0.1
-resetWeightChance:              0.1
-weightMutationScale:            0.01
+mutationChanceModifyWeight:         0.8
+mutationChanceNewSynapse:           0.2
+mutationChanceNewNeuron:            0.1
+resetWeightChance:                  0.1
+weightMutationScale:                0.01
 
 # Rarely Modified
-defaultCompatibilityThreshold:  3.0
-compatibilityAdjustmentSpeed:   0.2
-lossWeight_E:                   1.0
-lossWeight_D:                   1.0
-lossWeight_W:                   0.0
+defaultCompatibilityThreshold:      3.0
+compatibilityAdjustmentSpeed:       0.2
+lossWeight_E:                       1.0
+lossWeight_D:                       1.0
+lossWeight_W:                       0.0
