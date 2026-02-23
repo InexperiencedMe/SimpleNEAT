@@ -70,7 +70,7 @@ def visualizeSynapses(canvas, organism, neuronPositions, config):
 
         arrowLength = np.sqrt((startpointY - endpointY)**2 + (startpointX - endpointX)**2)
         if arrowLength != 0: # TODO: We could potentially display self recursion, hmm?
-            arrowWidth = int(np.abs(synapse.weight*3) + 2)
+            arrowWidth = int(np.abs(synapse.weight*config.synapseWidthMultiplier) + 2)
             arrowColor = getColorForValue(signal, config.negativeColor, config.neutralSynapseColor, config.positiveColor)
             cv.line(canvas, (startpointX, startpointY), (endpointX, endpointY), arrowColor, arrowWidth, lineType=cv.LINE_AA)
     return canvas
