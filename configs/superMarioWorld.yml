@@ -1,4 +1,4 @@
-runName: "superMarioWorldNEAT-longterm"
+runName: "superMarioWorldNEAT-betterNeuronSplit"
 seed: 123
 
 # Main
@@ -9,7 +9,7 @@ survivalThreshold:                  0.5
 elitism:                            1
 stagnationThreshold:                30
 evaluationEpisodes:                 1
-initializeSynapses:                 True
+initializeSynapses:                 False
 saveCheckpoints:                    True
 
 # Showcase Options
