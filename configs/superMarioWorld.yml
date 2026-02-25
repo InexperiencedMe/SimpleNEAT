@@ -10,6 +10,7 @@ elitism:                            2
 stagnationThreshold:                30
 evaluationEpisodes:                 1
 initializeSynapses:                 False
+saveCheckpoints:                    True
 
 # Showcase Options
 showcaseOptions:
