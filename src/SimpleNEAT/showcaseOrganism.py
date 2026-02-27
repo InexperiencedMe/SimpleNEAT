@@ -24,3 +24,4 @@ def showcaseOrganism(organism, solver, environmentMaker, config):
                 score += reward
 
             print(f"Showcase Episode {i+1:>2}. Score: {score:>8.2f}")
+    environment.close()
