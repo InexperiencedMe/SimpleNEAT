@@ -1,36 +1,45 @@
 import stable_retro as retro
 import gymnasium as gym
 import numpy as np
-from gymnasium.wrappers import ResizeObservation, GrayscaleObservation
+import cv2
 from SimpleNEAT.utils import loadConfig
 from SimpleNEAT.trainer import runEvolution
 from SimpleNEAT.showcaseOrganism import showcaseOrganism
 
 class CleanMario(gym.Wrapper):
     def __init__(self, env):
+        self.env = env
         self.actionSize = 6 
         self.observationShape = (14, 16)
         self.observationSize = np.prod(self.observationShape)
-
-        self.env = ResizeObservation(GrayscaleObservation(env), self.observationShape)
         
-        self.max_Xposition      = 0
-        self.stagnationCounter  = 0
+        originalShape = env.observation_space.shape
+        self.cropTop = int(originalShape[0] * 0.5)
+        self.cropLeft = int(originalShape[1] * 0.5)
+        
+        self.maxXposition = 0
+        self.stagnationCounter = 0
 
     def getRAMvalues(self):
         ram = self.env.unwrapped.get_ram()
-        Xposition = int(ram[0x94]) + (int(ram[0x95]) * 256) 
+        xPosition = int(ram[0x94]) + (int(ram[0x95]) * 256) 
         isDead = (ram[0x71] == 9)                             
-        return Xposition, isDead
+        return xPosition, isDead
 
     def processObservation(self, obs):
-        return (obs / 127.5) - 1
+        croppedObs = obs[self.cropTop:, self.cropLeft:]
+        greenObs = croppedObs[:, :, 1] 
+        targetSize = (self.observationShape[1], self.observationShape[0])
+        resizedObs = cv2.resize(greenObs, targetSize, interpolation=cv2.INTER_AREA)
+        
+        return (resizedObs / 127.5) - 1.0
 
     def reset(self, seed=None):
         obs, info = self.env.reset(seed=seed)
-        Xposition, _ = self.getRAMvalues()
-        self.max_Xposition = Xposition
+        xPosition, _ = self.getRAMvalues()
+        self.maxXposition = xPosition
         self.stagnationCounter = 0
+        
         return self.processObservation(obs)
 
     def step(self, action):
@@ -45,10 +54,11 @@ class CleanMario(gym.Wrapper):
         obs, _, terminated, truncated, info = self.env.step(fullAction)
         reward = 0
 
-        current_X, isDead = self.getRAMvalues()
-        progress = current_X - self.max_Xposition
+        currentX, isDead = self.getRAMvalues()
+        progress = currentX - self.maxXposition
+        
         if progress > 0:
-            self.max_Xposition = current_X
+            self.maxXposition = currentX
             self.stagnationCounter = 0
             reward += float(progress)
         else:
