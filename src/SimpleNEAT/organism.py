@@ -90,16 +90,18 @@ class Organism:
                     for _ in range(10):
                         synapseToSplit = self.synapses[self.rng.choice(synapseKeys)]
                         if synapseToSplit.enabled:
-                            synapseToSplit.enabled = False
+                            # TODO: If the parallel synapse stays, delete synapse.enabled property globally
+                            # synapseToSplit.enabled = False
 
                             newNeuron = tracker.getNeuronID(synapseToSplit.source, synapseToSplit.destination)
+                            if newNeuron in self.neurons: continue
                             self.neurons.add(newNeuron)
 
                             newLinkID1 = tracker.getSynapseID(synapseToSplit.source, newNeuron)
                             self.synapses[newLinkID1] = Synapse(synapseToSplit.source, newNeuron, 1.0, True)
 
                             newLinkID2 = tracker.getSynapseID(newNeuron, synapseToSplit.destination)
-                            self.synapses[newLinkID2] = Synapse(newNeuron, synapseToSplit.destination, synapseToSplit.weight, True)
+                            self.synapses[newLinkID2] = Synapse(newNeuron, synapseToSplit.destination, 0.0, True)
                             break
             else: # Remove a neuron
                 hiddenNeurons = [n for n in self.neurons if n >= self.inputSizeWithBias + self.outputSize]

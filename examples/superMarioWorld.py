@@ -10,7 +10,7 @@ class CleanMario(gym.Wrapper):
     def __init__(self, env):
         self.env = env
         self.actionSize = 6 
-        self.observationShape = (14, 16)
+        self.observationShape = (8, 8)
         self.observationSize = np.prod(self.observationShape)
         
         originalShape = env.observation_space.shape

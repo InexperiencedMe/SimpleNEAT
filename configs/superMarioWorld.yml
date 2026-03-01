@@ -1,4 +1,4 @@
-runName: "superMarioWorldNEAT-cropped"
+runName: "superMarioWorldNEAT-8x8greenNewSplit"
 seed: 123
 
 # Main
@@ -7,7 +7,7 @@ populationSize:                     150
 targetSpeciesSize:                  10
 survivalThreshold:                  0.2
 elitism:                            2
-stagnationThreshold:                30
+stagnationThreshold:                200
 evaluationEpisodes:                 1
 initializeSynapses:                 False
 saveCheckpoints:                    True
@@ -38,11 +38,11 @@ mutationChanceModifyWeight:         0.8
 mutationChanceSynapse:              0.4
 mutationChanceNeuron:               0.1
 resetWeightChance:                  0.1
-weightMutationScale:                0.1
+weightMutationScale:                0.01
 
 # Rarely Modified
-defaultCompatibilityThreshold:      1.0
-compatibilityAdjustmentSpeed:       0.1
+defaultCompatibilityThreshold:      3.0
+compatibilityAdjustmentSpeed:       0.0
 lossWeight_E:                       1.0
 lossWeight_D:                       1.0
 lossWeight_W:                       0.0
