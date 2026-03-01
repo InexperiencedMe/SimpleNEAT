@@ -92,7 +92,8 @@ def runEvolution(config, environmentMaker, resumePath=None):
                 print(f"Generation {generation:>4}: "
                     f"Best this generation: {scoreBestThisGeneration:>8.2f} | "
                     f"Average: {np.mean(fitnessScores):8.2f} | "
-                    f"Best Ever: {maxFitnessEver:8.2f}")
+                    f"Best Ever: {maxFitnessEver:8.2f} | "
+                    f"Species count: {len(solver.species):2d}")
 
 
                 if maxFitnessEver >= config.targetFitness:

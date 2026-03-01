@@ -76,20 +76,21 @@ class NEAT:
                 nonstagnantSpecies.append(species)
         self.species = nonstagnantSpecies
 
-        # Calculate Adjusted Fitness for nonstagnant species
+        # Calculate Average Fitness for nonstagnant species
+        for species in self.species:
+            speciesSize = len(species.members)
+            fitnessSum = sum(fitness for _, fitness in species.members)
+            species.averageFitness = fitnessSum / speciesSize
+            
+        minAverageFitness = min(species.averageFitness for species in self.species)
+        shift = -minAverageFitness if minAverageFitness < 0 else 0
+
         totalAdjustedFitness = 0
         newPopulation = []
         for species in self.species:
             speciesSize = len(species.members)
-
-            minimumFitness = min(fitness for _, fitness in species.members)
-            shift = abs(minimumFitness) if minimumFitness < 0 else 0
-
-            speciesAdjustedFitnessSum = 0
-            for _, fitness in species.members:
-                speciesAdjustedFitnessSum += (fitness + shift) / speciesSize
             
-            species.averageFitness = speciesAdjustedFitnessSum / speciesSize
+            species.averageFitness += shift
             totalAdjustedFitness += species.averageFitness
 
             if speciesSize >= self.config.targetSpeciesSize // 4:
