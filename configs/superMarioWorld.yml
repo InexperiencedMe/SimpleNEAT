@@ -1,12 +1,12 @@
-runName: "superMarioWorldNEAT-8x8-champion"
+runName: "superMarioWorldNEAT-8x8-please"
 seed: 123
 
 # Main
 targetFitness:                      10000.0
-populationSize:                     150
-targetSpeciesSize:                  10 # This will not be needed when we delete dynamic threshold
-survivalThreshold:                  0.2
-elitism:                            2
+populationSize:                     240
+targetSpeciesSize:                  12 # The idea more or less is to have 20 species, 12 members each, 6 survivors, 6*5/2 possible parent pairs
+survivalThreshold:                  0.5
+elitism:                            1
 stagnationThreshold:                50
 evaluationEpisodes:                 1
 initializeSynapses:                 False
@@ -41,8 +41,8 @@ resetWeightChance:                  0.1
 weightMutationScale:                0.2
 
 # Rarely Modified
-defaultCompatibilityThreshold:      3.0
-compatibilityAdjustmentSpeed:       0.0 # I dislike this in general, might delete dynamic adjustment
+defaultCompatibilityThreshold:      0.8
+compatibilityAdjustmentSpeed:       0.1
 lossWeight_E:                       1.0
 lossWeight_D:                       1.0
-lossWeight_W:                       0.0 # I dislike this, I'd rather calculate compatibility based on architecture not weights
+lossWeight_W:                       0.4

@@ -146,6 +146,6 @@ class NEAT:
             else:
                 excessCount += 1
 
-        # maxSynapses = max(len(synapseIDs1), len(synapseIDs2), 1) # TODO Delete or keep
-        return (self.config.lossWeight_E*excessCount + self.config.lossWeight_D*disjointCount)# / maxSynapses + self.config.lossWeight_W*weightsDifference
+        maxSynapses = max(len(synapseIDs1), len(synapseIDs2), 1) # TODO Delete or keep
+        return (self.config.lossWeight_E*excessCount + self.config.lossWeight_D*disjointCount) / maxSynapses + self.config.lossWeight_W*weightsDifference
     
