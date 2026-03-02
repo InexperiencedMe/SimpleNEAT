@@ -53,6 +53,7 @@ class NEAT:
 
         # Sort, Update Stagnation, Find Global Best
         bestFitnessGlobal = -np.inf
+        globalChampion = None
         for species in self.species:
             species.members.sort(key=lambda member: member[1], reverse=True)
             
@@ -67,6 +68,7 @@ class NEAT:
             
             if bestFitnessInSpecies > bestFitnessGlobal: 
                 bestFitnessGlobal = bestFitnessInSpecies
+                globalChampion = bestOrganismInSpecies
 
         # Remove stagnant unless contains best global member
         nonstagnantSpecies = []
@@ -93,9 +95,15 @@ class NEAT:
             species.averageFitness += shift
             totalAdjustedFitness += species.averageFitness
 
-            if speciesSize >= self.config.targetSpeciesSize // 4:
+            hasChampion = (species.members[0][0] is globalChampion)
+            if speciesSize >= self.config.targetSpeciesSize // 4 or hasChampion:
                 elites = species.members[:min(self.config.elitism, speciesSize)]
                 newPopulation.extend(copy.deepcopy(organism) for organism, _ in elites)
+
+            if hasChampion: # Guarantee mutated copy of a champion
+                mutatedChampion = copy.deepcopy(globalChampion)
+                mutatedChampion.mutate(self.tracker)
+                newPopulation.append(mutatedChampion)
 
         # Creating new generation
         while len(newPopulation) < self.populationSize:
