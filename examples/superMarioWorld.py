@@ -72,5 +72,5 @@ def environmentMaker(render_mode=None):
 
 if __name__ == "__main__":
     config = loadConfig("superMarioWorld")
-    bestOrganism, solver = runEvolution(config, environmentMaker, resumePath="checkpoints/superMarioWorldNEAT-fixed8x8/Gen_78-Fitness_1226.pkl")
+    bestOrganism, solver = runEvolution(config, environmentMaker, resumePath="checkpoints/superMarioWorldNEAT-8x8-SUPERFIXED3/Gen_3493-Fitness_2778.pkl")
     showcaseOrganism(bestOrganism, solver, environmentMaker, config.showcaseOptions)

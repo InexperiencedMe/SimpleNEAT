@@ -1,13 +1,13 @@
-runName: "superMarioWorldNEAT-fixed8x8"
+runName: "superMarioWorldNEAT-8x8-SUPERFIXED3"
 seed: 123
 
 # Main
 targetFitness:                      10000.0
 populationSize:                     150
-targetSpeciesSize:                  10
+targetSpeciesSize:                  10 # This will be not needed when we delete dynamic threshold
 survivalThreshold:                  0.2
 elitism:                            2
-stagnationThreshold:                200
+stagnationThreshold:                50
 evaluationEpisodes:                 1
 initializeSynapses:                 False
 saveCheckpoints:                    True
@@ -38,11 +38,11 @@ mutationChanceModifyWeight:         0.8
 mutationChanceSynapse:              0.4
 mutationChanceNeuron:               0.1
 resetWeightChance:                  0.1
-weightMutationScale:                0.01
+weightMutationScale:                0.2
 
 # Rarely Modified
 defaultCompatibilityThreshold:      3.0
-compatibilityAdjustmentSpeed:       0.0
+compatibilityAdjustmentSpeed:       0.0 # I dislike this in general, might delete dynamic adjustment
 lossWeight_E:                       1.0
 lossWeight_D:                       1.0
-lossWeight_W:                       0.0
+lossWeight_W:                       0.0 # I dislike this, I'd rather calculate compatibility based on architecture not weights

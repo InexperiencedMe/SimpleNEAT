@@ -32,7 +32,7 @@ class NEAT:
         for organism, fitness in evaluatedPopulation:
             placed = False
             for species in self.species:
-                if self.calculateGeneticDistance(organism, species.representative) < self.compatibilityThreshold:
+                if self.calculateGeneticDistance(organism, species.representative) <= self.compatibilityThreshold:
                     species.addMember(organism, fitness)
                     placed = True; break
             if not placed:
@@ -138,6 +138,6 @@ class NEAT:
             else:
                 excessCount += 1
 
-        maxSynapses = max(len(synapseIDs1), len(synapseIDs2), 1)
-        return (self.config.lossWeight_E*excessCount + self.config.lossWeight_D*disjointCount) / maxSynapses + self.config.lossWeight_W*weightsDifference
+        # maxSynapses = max(len(synapseIDs1), len(synapseIDs2), 1) # TODO Delete or keep
+        return (self.config.lossWeight_E*excessCount + self.config.lossWeight_D*disjointCount)# / maxSynapses + self.config.lossWeight_W*weightsDifference
     

@@ -38,7 +38,7 @@ mutationChanceModifyWeight:         0.8
 mutationChanceSynapse:              0.4
 mutationChanceNeuron:               0.1
 resetWeightChance:                  0.1
-weightMutationScale:                0.01
+weightMutationScale:                0.02
 
 # Rarely Modified
 defaultCompatibilityThreshold:      1.0

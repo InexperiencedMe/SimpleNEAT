@@ -68,7 +68,7 @@ class Organism:
                     synapse.weight += self.rng.normal(0, self.config.weightMutationScale)
 
         if self.rng.random() < self.config.mutationChanceSynapse:
-            if self.rng.random() < 0.5: # Add a synapse
+            if self.rng.random() < 0.8: # Add a synapse
                 validSources        = list(self.neurons)
                 validDestinations   = [n for n in self.neurons if n >= self.inputSizeWithBias]
                 existingLinks       = set((synapse.source, synapse.destination) for synapse in self.synapses.values())
@@ -84,7 +84,7 @@ class Organism:
                     del self.synapses[self.rng.choice(list(self.synapses.keys()))]
         
         if self.rng.random() < self.config.mutationChanceNeuron:
-            if self.rng.random() < 0.5: # Add a neuron
+            if self.rng.random() < 0.8: # Add a neuron
                 if self.synapses:
                     synapseKeys = list(self.synapses.keys())
                     for _ in range(10):
