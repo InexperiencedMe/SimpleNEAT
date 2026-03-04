@@ -101,9 +101,10 @@ class NEAT:
                 newPopulation.extend(copy.deepcopy(organism) for organism, _ in elites)
 
             if hasChampion: # Guarantee mutated copy of a champion
-                mutatedChampion = copy.deepcopy(globalChampion)
-                mutatedChampion.mutate(self.tracker)
-                newPopulation.append(mutatedChampion)
+                for _ in range(2):
+                    mutatedChampion = copy.deepcopy(globalChampion)
+                    mutatedChampion.mutate(self.tracker)
+                    newPopulation.append(mutatedChampion)
 
         # Creating new generation
         while len(newPopulation) < self.populationSize:

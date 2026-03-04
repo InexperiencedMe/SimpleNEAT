@@ -17,14 +17,20 @@ class CleanMario(gym.Wrapper):
         self.cropTop = int(originalShape[0] * 0.5)
         self.cropLeft = int(originalShape[1] * 0.5)
         
-        self.maxXposition = 0
+        self.maxXposition = 0       
         self.stagnationCounter = 0
 
     def getRAMvalues(self):
         ram = self.env.unwrapped.get_ram()
         xPosition = int(ram[0x94]) + (int(ram[0x95]) * 256) 
-        isDead = (ram[0x71] == 9)                             
-        return xPosition, isDead
+        
+        isDead = (ram[0x71] == 9)
+        
+        # 0x1493: End Level Timer (becomes > 0 when hitting tape or boss sphere)
+        # 0x13CE: Level Beaten Flag (128 / 0x80 is the actual beaten flag. 64 / 0x40 is the Midway gate)
+        # 0x71 == 12: Player Animation State for Castle Walk / Goal Tape
+        isBeaten = (ram[0x1493] > 0) or (ram[0x13CE] >= 128) or (ram[0x71] == 12)                          
+        return xPosition, isDead, isBeaten
 
     def processObservation(self, obs):
         croppedObs = obs[self.cropTop:, self.cropLeft:]
@@ -36,7 +42,7 @@ class CleanMario(gym.Wrapper):
 
     def reset(self, seed=None):
         obs, info = self.env.reset(seed=seed)
-        xPosition, _ = self.getRAMvalues()
+        xPosition, _, _ = self.getRAMvalues()
         self.maxXposition = xPosition
         self.stagnationCounter = 0
         
@@ -54,7 +60,7 @@ class CleanMario(gym.Wrapper):
         obs, _, terminated, truncated, info = self.env.step(fullAction)
         reward = 0
 
-        currentX, isDead = self.getRAMvalues()
+        currentX, isDead, won = self.getRAMvalues()
         progress = currentX - self.maxXposition
         
         if progress > 0:
@@ -63,14 +69,17 @@ class CleanMario(gym.Wrapper):
             reward += float(progress)
         else:
             self.stagnationCounter += 1
-        reward -= 1 # Constant penalty
+        reward -= 0.25
 
-        return self.processObservation(obs), reward, terminated or truncated or isDead or self.stagnationCounter >= 100
+        if won: reward += 1000
+            
+        done = terminated or truncated or isDead or won or self.stagnationCounter >= 300
+        return self.processObservation(obs), reward, done
     
 def environmentMaker(render_mode=None):
     return CleanMario(retro.make("SuperMarioWorld-Snes-v0", state="DonutPlains1", render_mode=render_mode))
 
 if __name__ == "__main__":
     config = loadConfig("superMarioWorld")
-    bestOrganism, solver = runEvolution(config, environmentMaker)
+    bestOrganism, solver = runEvolution(config, environmentMaker)#, resumePath="checkpoints/superMarioWorldNEAT-8x8-please/Gen_4314-Fitness_2874.pkl")
     showcaseOrganism(bestOrganism, solver, environmentMaker, config.showcaseOptions)
