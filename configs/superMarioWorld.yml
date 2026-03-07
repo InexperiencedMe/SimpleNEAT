@@ -1,4 +1,4 @@
-runName: "superMarioWorldNEAT-8x8-GOODREWARD"
+runName: "superMarioWorldNEAT-16x16-HAKUNA-MATATA"
 seed: 123
 
 # Main
@@ -34,11 +34,13 @@ showcaseOptions:
     synapseWidthMultiplier:         3
 
 # Mutations
-mutationChanceModifyWeight:         0.8
-mutationChanceSynapse:              0.1
+mutateChildChance:                  0.80
+mutationChanceModifyWeight:         0.80
+mutationChanceSynapse:              0.05
 mutationChanceNeuron:               0.02
-resetWeightChance:                  0.1
-weightMutationScale:                0.2
+resetWeightChance:                  0.02
+weightMutationScale:                0.05
+percentOfWeightsToMutate:           0.10
 
 # Rarely Modified
 defaultCompatibilityThreshold:      0.8

@@ -62,10 +62,11 @@ class Organism:
     def mutate(self, tracker):
         if self.rng.random() < self.config.mutationChanceModifyWeight:
             for synapse in self.synapses.values():
-                if self.rng.random() < self.config.resetWeightChance:
-                    synapse.weight = self.rng.normal(0, 1.0)
-                else:
-                    synapse.weight += self.rng.normal(0, self.config.weightMutationScale)
+                if self.rng.random() < self.config.percentOfWeightsToMutate:
+                    if self.rng.random() < self.config.resetWeightChance:
+                        synapse.weight = self.rng.normal(0, 1.0)
+                    else:
+                        synapse.weight += self.rng.normal(0, self.config.weightMutationScale)
 
         if self.rng.random() < self.config.mutationChanceSynapse:
                 validSources        = list(self.neurons)

@@ -10,12 +10,12 @@ class CleanMario(gym.Wrapper):
     def __init__(self, env):
         self.env = env
         self.actionSize = 6 
-        self.observationShape = (8, 8)
+        self.observationShape = (16, 16)
         self.observationSize = np.prod(self.observationShape)
         
         originalShape = env.observation_space.shape
-        self.cropTop = int(originalShape[0] * 0.5)
-        self.cropLeft = int(originalShape[1] * 0.5)
+        self.cropTop = int(originalShape[0] * 0.3)
+        self.cropLeft = int(originalShape[1] * 0.3)
         
         self.maxXposition = 0       
         self.stagnationCounter = 0
@@ -69,9 +69,9 @@ class CleanMario(gym.Wrapper):
             reward += float(progress)
         else:
             self.stagnationCounter += 1
-        reward -= 0.25
+        reward -= 0.1
 
-        if won: reward += 1000
+        if won: reward += 2000
             
         done = terminated or truncated or isDead or won or self.stagnationCounter >= 300
         return self.processObservation(obs), reward, done
@@ -81,5 +81,5 @@ def environmentMaker(render_mode=None):
 
 if __name__ == "__main__":
     config = loadConfig("superMarioWorld")
-    bestOrganism, solver = runEvolution(config, environmentMaker)#, resumePath="checkpoints/superMarioWorldNEAT-8x8-please/Gen_4314-Fitness_2874.pkl")
+    bestOrganism, solver = runEvolution(config, environmentMaker, resumePath="checkpoints/superMarioWorldNEAT-16x16-HAKUNA-MATATA/Gen_194-Fitness_1617.pkl")
     showcaseOrganism(bestOrganism, solver, environmentMaker, config.showcaseOptions)
