@@ -27,7 +27,7 @@ showcaseOptions:
     coloredObservation:             True
     positiveColor:                  [0.439, 0.788, 0.439, 1.0]
     neutralNeuronColor:             [1.0, 1.0, 1.0, 1.0]
-    neutralSynapseColor:            [0.9, 0.9, 0.9, 0.05]
+    neutralSynapseColor:            [0.9, 0.9, 0.9, 0.1]
     negativeColor:                  [0.788, 0.275, 0.275, 1.0]
     gridColor:                      [0.0, 0.0, 0.0, 1.0]
     gridThickness:                  5
