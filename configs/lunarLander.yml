@@ -10,7 +10,7 @@ elitism:                            2
 stagnationThreshold:                50
 evaluationEpisodes:                 3
 initializeSynapses:                 True
-saveCheckpoints:                    True
+saveCheckpoints:                    False
 
 # Showcase Options
 showcaseOptions:
@@ -25,24 +25,26 @@ showcaseOptions:
 
   visualization:
     coloredObservation:             True
-    positiveColor:                  [0.439, 0.788, 0.439, 1.0]
+    positiveColor:                  [0.8, 0.749, 0, 1.0]
     neutralNeuronColor:             [0.0, 0.0, 0.0, 1.0]
     neutralSynapseColor:            [0.05, 0.05, 0.05, 1.0]
-    negativeColor:                  [0.788, 0.275, 0.275, 1.0]
+    negativeColor:                  [0.498, 0.435, 0.914, 1.0]
     gridColor:                      [0.8, 0.8, 0.8, 1.0]
     gridThickness:                  5
     synapseWidthMultiplier:         3
 
 # Mutations
-mutationChanceModifyWeight:         0.8
-mutationChanceSynapse:              0.4
-mutationChanceNeuron:               0.1
-resetWeightChance:                  0.1
-weightMutationScale:                0.02
+mutateChildChance:                  0.80
+mutationChanceModifyWeight:         0.80
+mutationChanceSynapse:              0.05
+mutationChanceNeuron:               0.02
+resetWeightChance:                  0.02
+weightMutationScale:                0.05
+percentOfWeightsToMutate:           0.10
 
 # Rarely Modified
-defaultCompatibilityThreshold:      1.0
+defaultCompatibilityThreshold:      0.8
 compatibilityAdjustmentSpeed:       0.1
 lossWeight_E:                       1.0
 lossWeight_D:                       1.0
-lossWeight_W:                       0.0
+lossWeight_W:                       0.4
