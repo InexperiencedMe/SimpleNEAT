@@ -1,9 +1,9 @@
 # SimpleNEAT
-**SimpleNEAT** is an easy-to-study implementation of the legendary [NEAT Algorithm](https://nn.cs.utexas.edu/downloads/papers/stanley.ec02.pdf) from 2002, that belongs to a field of Machine Learning called Neuroevolution.
+**SimpleNEAT** is an easy-to-study implementation of the legendary [NEAT Algorithm](https://nn.cs.utexas.edu/downloads/papers/stanley.ec02.pdf) from 2002 by Kenneth Stanley and Risto Miikkulainen, that belongs to a field of Machine Learning called Neuroevolution.
 
 THUMBNAIL PICTURE HERE
 
-This is an educational and exploratory repo, that prioritizes simplicity, code clarity and good abstractions. I made it as a fun project for my video (LINK NEEDED), that I made as an attempt to replicate what SethBling did in 2015 with Super Mario World.
+This is an educational and exploratory repo, that prioritizes simplicity, code clarity and good abstractions. I made it as a fun project for my video (LINK NEEDED), that I made as an attempt to replicate what [SethBling did in 2015](https://www.youtube.com/watch?v=qv6UVOQ0F44) with Super Mario World.
 
 ## Showcase Training Runs
 
