@@ -1,4 +1,4 @@
-# Core Diffusion
+# SimpleNEAT
 **SimpleNEAT** is an easy-to-study implementation of the legendary [NEAT Algorithm](https://nn.cs.utexas.edu/downloads/papers/stanley.ec02.pdf) from 2002, that belongs to a field of Machine Learning called Neuroevolution.
 
 THUMBNAIL PICTURE HERE
