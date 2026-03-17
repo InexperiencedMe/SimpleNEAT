@@ -1,4 +1,14 @@
 [project]
 name = "SimpleNEAT"
 version = "0.1.0"
-dependencies = ["numpy", "opencv-python", "imageio[ffmpeg]"]
+dependencies = [
+    "numpy", 
+    "opencv-python", 
+    "imageio[ffmpeg]"
+]
+
+[project.optional-dependencies]
+examples = [
+    "gymnasium",
+    "stable-retro"
+]

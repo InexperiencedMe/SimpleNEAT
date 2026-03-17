@@ -2,13 +2,13 @@ runName: "lunarLanderNEAT"
 seed: 123
 
 # Main
-targetFitness:                      320.0
-populationSize:                     150
-targetSpeciesSize:                  10
+targetFitness:                      300.0
+populationSize:                     240
+targetSpeciesSize:                  12 # The idea more or less is to have 20 species, 12 members each, 6 survivors, 6*5/2 possible parent pairs
 survivalThreshold:                  0.2
 elitism:                            2
 stagnationThreshold:                50
-evaluationEpisodes:                 3
+evaluationEpisodes:                 3 # Lunar Lander is highly stochastic, so this helps determining who's good and who just got lucky
 initializeSynapses:                 True
 saveCheckpoints:                    False
 
