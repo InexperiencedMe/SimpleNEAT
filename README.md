@@ -1,7 +1,7 @@
 # SimpleNEAT
 **SimpleNEAT** is an easy-to-study implementation of the legendary [NEAT Algorithm](https://nn.cs.utexas.edu/downloads/papers/stanley.ec02.pdf) from 2002 by Kenneth Stanley and Risto Miikkulainen, that belongs to a field of Machine Learning called Neuroevolution.
 
-THUMBNAIL PICTURE HERE
+![media/SimpleNEAT.png](media/SimpleNEAT.png)
 
 This is an educational and exploratory repo, that prioritizes simplicity, code clarity and good abstractions. I made it as a fun project for my video (LINK NEEDED), that I made as an attempt to replicate what [SethBling did in 2015](https://www.youtube.com/watch?v=qv6UVOQ0F44) with Super Mario World.
 
@@ -9,13 +9,19 @@ This is an educational and exploratory repo, that prioritizes simplicity, code c
 
 ### Lunar Lander (Default Config)
 
-PUT LUNAR LANDER GIF HERE AAAAAAAAAAAAAAAAAAAAAAAAAAAA
+<p align="center">
+  <img src="media/lunarLander.gif" style="width:80%;">
+</p>
+
 
 This result has been obtained in a matter of minutes. It could be done even faster if you make the parameters "more greedy", but I like to ensure sufficient exploration.
 
 ### Super Mario World (Default Config)
 
-PUT SUPER MARIO WORLD GIF HERE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+<p align="center">
+  <img src="media/superMarioWorld.gif" style="width:80%;">
+</p>
+
 
 ## Features
 Currently, the project supports:
