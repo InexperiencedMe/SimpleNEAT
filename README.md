@@ -22,6 +22,7 @@ This result has been obtained in a matter of minutes. It could be done even fast
   <img src="media/superMarioWorld.gif" style="width:80%;">
 </p>
 
+This run took around 16h, but the environment was solved in under 10h.
 
 ## Features
 Currently, the project supports:
