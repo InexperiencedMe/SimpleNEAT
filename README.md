@@ -3,7 +3,7 @@
 
 ![media/SimpleNEAT.png](media/SimpleNEAT.png)
 
-This is an educational and exploratory repo, that prioritizes simplicity, code clarity and good abstractions. I made it as a fun project for my video (LINK NEEDED), that I made as an attempt to replicate what [SethBling did in 2015](https://www.youtube.com/watch?v=qv6UVOQ0F44) with Super Mario World.
+This is an educational and exploratory repo, that prioritizes simplicity, code clarity and good abstractions. I made it as a fun project for [my video](https://www.youtube.com/watch?v=X2ZZDomOejs), that I made as an attempt to replicate what [SethBling did in 2015](https://www.youtube.com/watch?v=qv6UVOQ0F44) with Super Mario World.
 
 ## Showcase Training Runs
 
